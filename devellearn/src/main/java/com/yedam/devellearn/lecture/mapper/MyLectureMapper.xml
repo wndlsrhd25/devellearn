@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.MyLectureMapper">
+
+	<!-- 등록 -->
+	<insert id="insert" parameterType="MyLectureVO">
+		<selectKey keyProperty="myLectureNo" resultType="int" order="BEFORE">
+			select nvl(max(my_lecture_no), 0) + 1 as my_lecture_no from my_lectures
+		</selectKey>
+		insert into my_lectures (
+								my_lecture_no,
+								member_id,
+								lecture_no,
+								total_play_time
+								)
+						 values (
+								#{myLectureNo},
+								#{memberId},
+								#{lectureNo},
+								(select sum(play_time) from curriculums where lecture_no = #{lectureNo})
+								)
+	</insert>
+
+	<!-- 수정 -->
+	<update id="update" parameterType="MyLectureVO">
+		update my_lectures set
+			latest_watched_curr = #{latestWatchedCurr},
+			latest_watched_time = #{latestWatchedTime},
+			total_watched_time = (select sum(case when m.watched_all = '완료' then c.play_time
+								             else m.latest_watched_time
+											 end) as total_watched_time
+								  from my_curriculums m
+								  join curriculums c on (c.curr_no = m.curr_no)
+								  where m.member_id = #{memberId}
+								  and m.lecture_no = #{lectureNo}),
+			latest_watched_date = sysdate
+		where member_id = #{memberId}
+		and lecture_no = #{lectureNo}
+	</update>
+
+	<!-- 수강 완료시 -->
+	<update id="updateToComplete" parameterType="MyLectureVO">
+		update my_lectures
+		set complete_status = '완료'
+		where member_id = #{memberId}
+		and lecture_no = #{lectureNo}
+	</update>
+
+	<!-- 삭제 -->
+	<delete id="delete" parameterType="Integer">
+		delete from my_lectures where
+		my_lecture_no = #{myLectureNo}
+	</delete>
+
+	<!-- 전체조회 - 멤버아이디로 조회 -->
+	<select id="selectAllByMemberId" parameterType="MyLectureVO"
+		resultType="MyLectureVO">
+		select m.my_lecture_no,
+		m.member_id,
+		m.lecture_no,
+		m.latest_watched_curr,
+		m.latest_watched_time,
+		m.total_watched_time,
+		m.total_play_time,
+		m.complete_status,
+		l.member_id as lecturer,
+		l.title,
+		l.introduce,
+		l.reg_date,
+		l.category,
+		l.price,
+		l.difficulty,
+		l.status,
+		l.skill_tag,
+		l.img_src,
+		(select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no =
+		l.lecture_no) as avgScore,
+		(select count(*) from my_lectures where lecture_no = l.lecture_no) as
+		learnerNum
+		from my_lectures m
+		join lectures l on (m.lecture_no =
+		l.lecture_no)
+		<if test="likeStatus neq null">
+			join lecture_like k on (l.lecture_no = k.lecture_no and
+			m.member_id = k.member_id)
+		</if>
+		where m.member_id = #{memberId}
+		order by 6 desc
+	</select>
+
+	<!-- SEK : 가장 최근 강의 조회 - 멤버아이디로 조회 -->
+	<select id="getMyLatestOne" parameterType="MyLectureVO"
+		resultType="MyLectureVO">
+		select mylectrues.*
+		from
+		(select m.my_lecture_no,
+		m.member_id,
+		m.lecture_no,
+		m.latest_watched_curr,
+		m.latest_watched_time,
+		m.total_watched_time,
+		m.total_play_time,
+		m.complete_status,
+		m.latest_watched_date,
+		l.member_id as lecturer,
+		l.title,
+		l.category
+		from my_lectures m
+		join lectures l on (m.lecture_no = l.lecture_no)
+		where m.member_id = #{memberId}
+		order by 9 desc) mylectrues
+		where rownum = 1
+	</select>
+
+	<!-- 단건조회 - 멤버아이디 + 강의번호로 조회 -->
+	<!-- ★★★★★★추후 distinct 제거 필요★★★★★★ -->
+	<select id="selectOne" parameterType="MyLectureVO"
+		resultType="MyLectureVO">
+		select m.my_lecture_no,
+		m.member_id,
+		m.lecture_no,
+		m.latest_watched_curr,
+		m.latest_watched_time,
+		m.total_watched_time,
+		m.total_play_time,
+		m.complete_status,
+		l.member_id as lecturer,
+		l.title,
+		l.introduce,
+		l.reg_date,
+		l.category,
+		l.price,
+		l.difficulty,
+		l.status,
+		l.skill_tag,
+		l.img_src
+		from my_lectures m
+		join lectures l on (m.lecture_no = l.lecture_no)
+		where m.member_id = #{memberId}
+		and m.lecture_no = #{lectureNo}
+	</select>
+
+
+	<!-- SEK - 수강한 강의 수 조회 (마이페이지-학습현황) -->
+
+	<select id="completeLecture" parameterType="MyLectureVO"
+		resultType="Integer">
+		select count(*) from my_lectures
+		where member_id= #{memberId}
+		and complete_status='완료'
+	</select>
+
+</mapper>

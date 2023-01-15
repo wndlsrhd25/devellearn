@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.lecture.mapper.PaymentMapper">
+
+	<!-- 고유번호조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(payment_no), 0) + 1 as payment_no from payments
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insert" parameterType="PaymentVO">
+		insert into payments (
+							  payment_no,
+							  member_id,
+							  lecture_no,
+							  lecture_title,
+							  payment_type,
+							  price,
+							  merchant_uid
+							 )
+					  values (
+					  		  #{paymentNo},
+					  		  #{memberId},
+					  		  #{lectureNo},
+					  		  #{lectureTitle},
+					  		  #{paymentType},
+					  		  #{price},
+					  		  #{merchantUid}
+					  		 )
+	</insert>
+</mapper>

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.mentor.mapper.MentorMapper">
+
+	<!-- 전체조회 -->
+	<select id="getMentorListAll" resultType="MentorVO"
+		parameterType="Map">
+		SELECT * FROM mentors ORDER BY mentor_no desc
+	</select>
+	<!-- 내글 전체조회 -->
+	<select id="getMyMentorListAll" resultType="MentorVO"
+		parameterType="Map">
+		SELECT * FROM mentors WHERE member_id = #{memberId}
+		ORDER BY mentor_no desc
+	</select>
+	<!-- 멘티 전체조회 -->
+	<select id="getMentiList" resultType="MentorRelationVo"
+		parameterType="Map">
+		SELECT A.title,
+		A.img,
+		A.category,
+		B.start_date,
+		B.end_date,
+		B.status,
+		B.menti_id,
+		B.mentorcons_no
+		FROM mentors A
+		JOIN mentorrelation B
+		ON A.mentor_no = B.mentor_no
+		WHERE B.member_id= #{memberId}
+		ORDER BY B.mentor_no desc
+	</select>
+
+	<!-- 검색 -->
+	<select id="getMentorFilter" resultType="MentorVO"
+		parameterType="java.util.HashMap">
+		select * from mentors
+		<where>
+
+			<if test="open =='전체'">
+				
+			</if>
+			<if test="open =='모집완료'">
+				open = '모집완료'
+			</if>
+			<if test="open =='모집중'">
+				open = '모집중'
+			</if>
+			<if test="category != null and !category.equals('')">
+				category = #{category}
+			</if>
+
+			<if test="searchinput != null and !searchinput.equals('')">
+				(upper(title) like '%'||upper(#{searchinput})||'%'
+				OR upper(content) like '%'||upper(#{searchinput})||'%')
+			</if>
+		</where>
+			ORDER BY mentor_no desc
+	</select>
+	<!-- 내글 검색 -->
+	<select id="getMyMentorFilter" resultType="MentorVO"
+		parameterType="java.util.HashMap">
+		select * from mentors
+		<where>
+			<if test="open =='전체'">
+				member_id = #{memberId}
+			</if>
+			<if test="open =='모집완료'">
+				open = '모집완료' and member_id = #{memberId}
+			</if>
+			<if test="open =='모집중'">
+				open = '모집중' and member_id = #{memberId}
+			</if>
+			<if test="searchinput != null and !searchinput.equals('')">
+				(upper(title) like '%'||upper(#{searchinput})||'%')
+				and member_id = #{memberId}
+			</if>
+		</where>
+		
+		ORDER BY mentor_no desc
+	</select>
+	<!-- 멘티 검색 -->
+	<select id="getMyMentiFilter" resultType="MentorRelationVo"
+		parameterType="java.util.HashMap">
+		SELECT A.title,
+		A.img,
+		A.category,
+		B.start_date,
+		B.end_date,
+		B.status,
+		B.menti_id
+		FROM mentors A
+		JOIN mentorrelation B
+		ON A.mentor_no = B.mentor_no
+		<where>
+			<if test="status =='전체'">
+				B.status='진행중' or B.status='멘토종료'
+			</if>
+			<if test="status =='멘토종료'">
+				B.status = '멘토종료'
+			</if>
+			<if test="status =='진행중'">
+				B.status = '진행중'
+			</if>
+		</where>
+		AND B.member_id = #{memberId}
+		ORDER BY B.mentor_no desc
+	</select>
+
+
+
+	<!-- 단건조회 -->
+	<select id="getMentorDetail" resultType="MentorVO"
+		parameterType="int">
+		SELECT * FROM mentors WHERE mentor_no = #{mentorNo}
+	</select>
+
+	<!-- 등록 -->
+	<insert id="insertMentor" parameterType="MentorVO">
+		<selectKey order="BEFORE" keyProperty="mentorNo"
+			resultType="int">
+			select
+			nvl(max(mentor_no), 0)+1 as mentorNo from mentors
+		</selectKey>
+		INSERT INTO mentors
+		(mentor_no, member_id, title, content, category,
+		open, reg_date, count, price, img)
+		VALUES (#{mentorNo}, #{memberId},
+		#{title}, #{content}, #{category}, '모집중', sysdate, 0, #{price},
+		#{img})
+	</insert>
+
+	<!-- 수정 -->
+	<insert id="updateMentor">
+		UPDATE mentors
+		SET member_id = #{memberId},
+		title = #{title},
+		content = #{content},
+		category = #{category},
+		open = #{open},
+		reg_date = sysdate,
+		count = 0,
+		price = #{price},
+		img = #{img}
+		WHERE mentor_no = #{mentorNo}
+	</insert>
+	<!-- 멘티수정 -->
+	<update id="updateMenti" parameterType="MentorRelationVo">
+		UPDATE mentorrelation
+		SET status = '멘토종료'
+		WHERE mentorcons_no = #{mentorconsNo}
+	</update>
+	<!-- 모집상태수정 -->
+	<insert id="updateOpen">
+		UPDATE mentors
+		SET
+		open = '모집완료'
+		WHERE mentor_no = #{mentorNo}
+	</insert>
+
+	<!-- 삭제 -->
+	<delete id="deleteMentor" parameterType="int">
+		delete from mentors
+		where mentor_no = #{mentorNo}
+	</delete>
+
+	<!-- 댓글조회 -->
+	<select id="getMentorRepListAll" resultType="MentorRepVO"
+		parameterType="int">
+		SELECT * FROM mentorreps WHERE mentor_no = #{mentorNo} ORDER BY reg_date desc
+	</select>
+
+	<!-- 댓글등록 -->
+	<insert id="insertMentorRep" parameterType="MentorRepVO">
+		<selectKey order="BEFORE" keyProperty="mentorrepNo"
+			resultType="int">
+			select
+			nvl(max(mentorrep_no), 0)+1 as mentorrepNo from
+			mentorreps
+		</selectKey>
+		INSERT INTO mentorreps
+		(mentorrep_no, member_id, content, reg_date,
+		mentor_no)
+		VALUES (#{mentorrepNo}, #{memberId}, #{content}, sysdate,
+		#{mentorNo})
+	</insert>
+
+	<!-- 댓글삭제 -->
+	<delete id="deleteMentorRep" parameterType="int">
+		delete from
+		mentorreps
+		where mentorrep_no = #{mentorrepNo}
+	</delete>
+
+	<!-- 댓글수정 -->
+	<insert id="updateMentorRep">
+		UPDATE mentorreps
+		SET content = #{content}, reg_date = sysdate
+		WHERE mentorrep_no = #{mentorrepNo}
+	</insert>
+
+	<!-- 멘토신청 -->
+	<insert id="enterMentor" parameterType="MentorRelationVO">
+		<selectKey order="BEFORE" keyProperty="mentorconsNo"
+			resultType="int">
+			select
+			nvl(max(mentorcons_no), 0)+1 as mentorconsNo from
+			mentorrelation
+		</selectKey>
+		INSERT INTO mentorrelation
+		(mentorcons_no, start_date, end_date,
+		status, member_id, menti_id, mentor_no)
+		VALUES (#{mentorconsNo},
+		#{startDate}, #{endDate}, '진행중', #{memberId}, #{mentiId}, #{mentorNo})
+	</insert>
+
+	<!-- 날짜리스트 -->
+	<select id="getMentorRelationList" resultType="MentorRelationVO">
+		SELECT * FROM
+		mentorrelation
+	</select>
+
+	<!-- 날짜계산 -->
+	<select id="getMentorCount" resultType="MentorRelationVO"
+		parameterType="int">
+		SELECT end_date - start_date as count from
+		mentorrelation where mentorcons_no=#{mentorConsNo};
+	</select>
+
+
+	<!-- SEK -완료한 멘토링 수 조회 (마이페이지-학습현황) -->
+
+	<select id="finishMentor" parameterType="MentorRelationVO"
+		resultType="Integer">
+		select count(*) from mentorRelation
+		where member_id=#{memberId} and status='멘토종료'
+	</select>
+
+</mapper>

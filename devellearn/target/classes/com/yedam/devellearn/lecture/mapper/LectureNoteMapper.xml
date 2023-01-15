@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.LectureNoteMapper">
+	
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(lecture_note_no), 0) + 1 as lectureNoteNo from lecture_notes
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insert" parameterType="LectureNoteVO">
+		insert into Lecture_notes (
+								   lecture_note_no,
+								   curr_no,
+								   member_id,
+								   content,
+								   time
+								  )
+						   values (
+						  	 	   #{lectureNoteNo},
+						  	 	   #{currNo},
+						  		   #{memberId},
+						  		   #{content},
+						  		   #{time}
+						  		  )	
+	</insert>
+	
+	<!-- 전체조회 - 회원아이디 + 커리큘럼번호로 조회 -->
+	<select id="selectAllByMemberIdAndCurrNo" parameterType="LectureNoteVO" resultType="LectureNoteVO">
+		select *
+		from lecture_notes
+		where member_id = #{memberId}
+		and curr_no = #{currNo}
+		order by 1 desc
+	</select>
+	
+	<!-- 단건조회 -->
+	<select id="selectOne" parameterType="Integer" resultType="LectureNoteVO">
+		select *
+		from lecture_notes
+		where lecture_note_no = #{lectureNoteNo}
+	</select>
+</mapper>

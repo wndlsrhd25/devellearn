@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.blog.mapper.BlogLikeMapper">
+
+
+	<!-- 등록 -->
+	<insert id="insertBlogLike" parameterType="LectureQnaLikeVO">
+		<selectKey keyProperty="likeNo" order="BEFORE" resultType="int">
+		select NVL(MAX(like_no),0)+1 FROM blog_likes
+		
+		</selectKey>
+		insert into blog_likes (
+								like_no,
+								member_id,
+								post_no
+								) 
+								values 
+								(
+								#{likeNo}, 
+								#{memberId},
+								#{postNo}
+								)
+	</insert>
+	
+	<!-- 삭제 -->
+	<delete id="deleteBlogLike" parameterType="Integer">
+		delete from blog_likes where like_no = #{likeNo}
+	</delete>
+	
+	<!-- 단건조회 -->
+	<select id="blogLike" parameterType="BlogLikeVO" resultType="BlogLikeVO">
+		select *
+		from blog_likes
+		where post_no = #{postNo}
+		and member_id = #{memberId}
+	</select>
+	
+	<!-- 좋아요 수 -->
+	<select id="selectLikeCnt" parameterType="Integer" resultType="Integer">
+		select count(*) 
+		from blog_likes
+		where post_no = #{postNo}
+	</select>
+
+	<!-- 좋아요 게시글 조회 -->
+	<select id="getLikeCard" resultType="BlogPostVO" >
+	select p.*
+           ,l.like_no
+	  from  blog_post p 
+	  join (select post_no , like_no
+	  from blog_likes 
+	 where member_id = #{memberId} ) l
+	    on p.post_no = l.post_no
+	 order by p.post_no desc
+	</select>
+
+	
+</mapper>

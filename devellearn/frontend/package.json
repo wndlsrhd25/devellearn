@@ -1,0 +1,81 @@
+{
+  "name": "devellearn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "```\r npm install\r ```",
+  "author": "",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "main": "babel.config.js",
+  "dependencies": {
+    "@vuelidate/core": "^2.0.0",
+    "@vuelidate/validators": "^2.0.0",
+    "axios": "^0.27.2",
+    "bootstrap": "^4.6.2",
+    "bootstrap-vue": "^2.22.0",
+    "chart.js": "^2.7.2",
+    "core-js": "^3.8.3",
+    "element-ui": "^2.15.10",
+    "html2pdf.js": "^0.10.1",
+    "quill-image-drop-module": "^1.0.3",
+    "quill-image-resize": "^3.0.9",
+    "quill-image-resize-module": "^3.0.0",
+    "tiptap-extensions": "^1.35.2",
+    "vee-validate": "^3.4.14",
+    "vue": "^2.7.10",
+    "vue-chartjs": "^3.2.1",
+    "vue-infinite-loading": "^2.4.5",
+    "vue-moment": "^4.1.0",
+    "vue-quill-editor": "^3.0.6",
+    "vue-router": "^3.5.1",
+    "vue-sidebar-menu": "^4.8.1",
+    "vue-sweetalert2": "^5.0.5",
+    "vuetify": "^2.6.0",
+    "vuex": "^3.6.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.16",
+    "@babel/eslint-parser": "^7.12.16",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-vuex": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "prettier": "^2.4.1",
+    "raw-loader": "^4.0.2",
+    "sass": "~1.32.0",
+    "sass-loader": "^10.0.0",
+    "vue-cli-plugin-vuetify": "~2.5.8",
+    "vue-template-compiler": "^2.6.14",
+    "vuetify-loader": "^1.7.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/essential",
+      "eslint:recommended",
+      "plugin:prettier/recommended"
+    ],
+    "parserOptions": {
+      "parser": "@babel/eslint-parser"
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "keywords": [],
+  "license": "ISC"
+}

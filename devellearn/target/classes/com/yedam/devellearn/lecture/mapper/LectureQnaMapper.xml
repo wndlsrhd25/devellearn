@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.LectureQnaMapper">
+	
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(qna_no), 0) + 1 as qna_no from lecture_qna
+	</select>
+	
+	<!-- 전체조회 - 강의번호로 조회(객체 파라미터 전달받음) -->
+	<select id="selectAllByLectureNo" resultType="LectureQnaVO" parameterType="LectureQnaVO">
+		select q.qna_no, q.member_id, q.curr_no, q.curr_name, q.lecture_title, q.title, q.content, q.reg_date, q.status, (select count(*) from lecture_answer where qna_no = q.qna_no) as replyNum
+		from lecture_qna q
+		<if test = 'lectureNo neq 0'>
+			where curr_no in (select curr_no from curriculums where lecture_no = #{lectureNo})
+		</if>
+		<if test = 'status neq "all"'> 
+			and status = #{status}
+		</if>
+		order by 1 desc
+	</select>
+	
+	<!-- 전체조회 - 커리큘럼번호로 조회(객체 파라미터 전달받음) -->
+	<select id="selectAllByCurrNo" resultType="LectureQnaVO" parameterType="LectureQnaVO">
+		select q.qna_no, q.member_id, q.curr_no, q.curr_name, q.lecture_title, q.title, q.content, q.reg_date, q.status, (select count(*) from lecture_answer where qna_no = q.qna_no) as replyNum
+		from lecture_qna q
+		where curr_no = #{currNo}
+		<if test = 'status neq "all"'> 
+			and status = #{status}
+		</if>
+		order by 1 desc
+	</select>
+	
+	<!-- 검색조회 - 강의번호로 조회(객체 파라미터 전달받음) -->
+	<select id="searchLectureQna" resultType="LectureQnaVO" parameterType="LectureQnaVO">
+		select q.qna_no, q.member_id, q.curr_no, q.curr_name, q.lecture_title, q.title, q.content, q.reg_date, q.status, (select count(*) from lecture_answer where qna_no = q.qna_no) as replyNum
+		from lecture_qna q
+		<if test = 'lectureNo neq 0'>
+			where curr_no in (select curr_no from curriculums where lecture_no = #{lectureNo})
+		</if>
+		<if test = 'currNo neq 0'>
+			where curr_no = #{currNo}
+		</if>
+		<if test = 'status neq "all"'> 
+			and status = #{status}
+		</if>
+		order by 1 desc
+	</select>
+	
+	<!-- 전체조회 - 회원아이디로 조회(수강자)(마이페이지-나의질문) -->
+	<select id="selectAllByLearner" resultType="LectureQnaVO" parameterType="Map">
+		select q.qna_no, q.member_id, q.curr_no, q.curr_name, q.lecture_title, q.title, q.content, q.reg_date, q.status, (select count(*) from lecture_answer where qna_no = q.qna_no) as replyNum
+		from lecture_qna q
+		where member_id = #{memberId}
+		<if test = 'status neq "all"'> 
+			and status = #{status}
+		</if>
+		order by 1 desc
+	</select>
+	
+	<!-- 전체조회 - 회원아이디로 조회(강사)(마이페이지-받은질문)(객체 파라미터 전달받음) -->
+	<select id="selectAllByLecturer" resultType="LectureQnaVO" parameterType="LectureQnaVO">
+		select q.qna_no, q.member_id, q.curr_no, q.curr_name, q.lecture_title, q.title, q.content, q.reg_date, q.status, (select count(*) from lecture_answer where qna_no = q.qna_no)
+		from lecture_qna q
+		where curr_no in (select curr_no 
+		                  from curriculums 
+		                  where lecture_no in (select lecture_no 
+		                                       from lectures 
+		                                       where member_id in (select member_id 
+		                                                           from members 
+		                                                           where member_id = #{memberId})))
+		<if test = 'status neq "all"'> 
+			and status = #{status}
+		</if>
+		order by 1 desc
+	</select>
+	
+	
+	
+	<!-- 단건조회 - 고유번호로 조회 -->
+	<select id="selectOne" resultType="LectureQnaVO" parameterType="Integer">
+		select *
+		from lecture_qna
+		where qna_no = #{qnaNo}
+	</select>
+	
+	<insert id="insert" parameterType="LectureQnaVO">
+		insert into lecture_qna (
+								 qna_no,
+								 member_id,
+								 curr_no,
+								 curr_name,
+								 lecture_title,
+								 title,
+								 content
+								)
+						  values(
+						  		 #{qnaNo},
+						  		 #{memberId},
+						  		 #{currNo},
+						  		 #{currName},
+						  		 #{lectureTitle},
+						  		 #{title},
+						  		 #{content}
+								)
+	</insert>
+	
+	<!-- 강의질문 수정 -->
+	<update id="update" parameterType="LectureQnaVO">
+		update lecture_qna 
+		set 
+		<if test="status neq null">
+			status = #{status}
+		</if>
+		<if test="currNo neq 0">
+			curr_no = #{currNo},
+			curr_name = #{currName},
+			title = #{title},
+			content = #{content}
+		</if>
+		where qna_no = #{qnaNo}
+	</update>
+	
+	<!-- 강의질문 삭제 -->
+	<delete id="delete">
+		delete from lecture_qna where qna_no = #{qnaNo}
+	</delete>
+</mapper>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+		<setting name="jdbcTypeForNull" value="VARCHAR" />
+		<setting name="callSettersOnNulls" value="true"/>
+	</settings>
+	
+	<typeAliases>
+		<package name="com.yedam.devellearn.blog.service" />
+		<package name="com.yedam.devellearn.board.service" />
+		<package name="com.yedam.devellearn.company.service" />
+		<package name="com.yedam.devellearn.lecture.service" />
+		<package name="com.yedam.devellearn.login.service" />
+		<package name="com.yedam.devellearn.mentor.service" />
+		<package name="com.yedam.devellearn.message.service" />
+		<package name="com.yedam.devellearn.project.service" />
+		<package name="com.yedam.devellearn.qna.service" />
+		<package name="com.yedam.devellearn.recruit.service" />
+		<package name="com.yedam.devellearn.study.service" />
+		<package name="com.yedam.devellearn.resume.service" />
+		<package name="com.yedam.devellearn.admin.service" />
+	</typeAliases>
+	
+	<typeHandlers>
+		<typeHandler javaType="java.sql.Date"
+			handler="org.apache.ibatis.type.DateTypeHandler" />
+	</typeHandlers>
+</configuration>

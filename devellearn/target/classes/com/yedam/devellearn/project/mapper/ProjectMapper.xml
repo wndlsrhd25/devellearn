@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.project.mapper.ProjectMapper">
+
+
+	<!-- id 중복체크 -->
+	<select id="projectidCheck" resultType="Integer" parameterType="Map">
+		SELECT count(*) FROM
+		(SELECT project_id FROM projects WHERE project_id=#{projectId})
+	</select>
+	
+	<!-- 전체조회 -->
+	<select id="getProjectListAll" resultType="ProjectVO" parameterType="Map">
+		SELECT * FROM projects ORDER BY project_no desc
+	</select>
+	<!-- 내글 전체조회 -->
+	<select id="getMyProjectListAll" 
+	resultType="ProjectVO" 
+	parameterType="Map">
+		SELECT * FROM projects 
+		WHERE member_id = #{memberId} 
+		ORDER BY project_no desc
+	</select>
+	<!-- 플젝승인 전체조회 -->
+	<select id="getPmemberList" 
+	resultType="ProjectConsVO"
+	parameterType="Map">
+			SELECT A.project_name,
+                    A.img,
+                    A.category,
+                    A.project_id,
+	               B.apply_date,
+			       B.approval_date,
+			       B.status,
+			       B.comemember_id,		      
+			       B.projectcons_no		      
+			FROM projects A
+			JOIN projectcons B
+			ON A.project_no = B.project_no
+			WHERE B.member_id= #{memberId}
+			ORDER BY B.project_no desc
+	</select>
+	<!-- 참가한 플젝 조회 -->
+	<select id="getProjList" 
+	resultType="ProjectConsVO" 
+	parameterType="Map">
+			SELECT A.project_name,
+                    A.img,
+                    A.category,
+                    A.project_id,
+	               B.apply_date,
+			       B.approval_date,
+			       B.status,
+			       B.comemember_id,		      
+			       B.projectcons_no,
+			       B.withdraw
+			FROM projects A
+			JOIN projectcons B
+			ON A.project_no = B.project_no
+			WHERE B.comemember_id = #{memberId}
+				AND B.status = '승인완료'
+			ORDER BY B.project_no desc
+	</select>
+
+	<!-- 검색 -->
+	<select id="getProjectFilter" resultType="ProjectVO" parameterType="java.util.HashMap"
+	>
+		select * from projects 
+		<where>
+
+			<if test="open =='전체'">
+			 open='모집중' or open='모집완료'
+			</if>
+			<if test="open =='모집완료'">
+			open = '모집완료'
+			</if>
+			<if test="open =='모집중'">
+			open = '모집중'
+			</if>
+			<if test="category != null and !category.equals('')">
+			category = #{category}
+			</if>
+			
+			<if test="searchinput != null and !searchinput.equals('')">
+			(upper(project_name) like '%'||upper(#{searchinput})||'%'
+			OR upper(content) like '%'||upper(#{searchinput})||'%')
+			</if>
+		</where>
+		ORDER BY project_no desc
+	</select>
+	<!-- 내글 검색 -->
+	<select id="getMyProjectFilter" resultType="ProjectVO" parameterType="java.util.HashMap"
+	>
+		select * from projects 
+		<where>
+
+			<if test="open =='전체'">
+			  member_id = #{memberId}
+			</if>
+			<if test="open =='모집완료'">
+			open = '모집완료' AND member_id = #{memberId}
+			</if>
+			<if test="open =='모집중'">
+			open = '모집중' AND member_id = #{memberId}
+			</if>
+			<if test="searchinput != null and !searchinput.equals('')">
+			(upper(project_name) like '%'||upper(#{searchinput})||'%') AND member_id = #{memberId}
+			</if>
+		</where>
+		ORDER BY project_no desc
+	</select>
+	<!-- 플젝멤버 검색 -->
+	<select id="getMyPmemberFilter" resultType="ProjectConsVO" parameterType="java.util.HashMap"
+	>
+			SELECT A.project_name,
+                    A.img,
+                    A.category,
+                    A.project_id,
+	               B.apply_date,
+			       B.approval_date,
+			       B.status,
+			       B.comemember_id,		      
+			       B.projectcons_no,
+			       B.withdraw	      
+			FROM projects A
+			JOIN projectcons B
+			ON A.project_no = B.project_no 
+		<where>
+			<if test="status =='전체'">
+			 B.member_id = #{memberId} AND (B.status='승인대기' or B.status='승인완료')
+			</if>
+			<if test="status =='승인완료'">
+			B.status = '승인완료' AND B.member_id = #{memberId}
+			</if>
+			<if test="status =='승인대기'">
+			B.status = '승인대기' AND B.member_id = #{memberId}
+			</if>
+		</where>
+		ORDER BY B.project_no desc
+	</select>
+
+	<!-- 단건조회 -->
+	<select id="getProjectDetail" resultType="ProjectVO"
+		parameterType="int">
+		SELECT * FROM projects WHERE project_no = #{projectNo}
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insertProject" parameterType="ProjectVO">
+		<selectKey order="BEFORE" keyProperty="projectNo"
+			resultType="int">
+			select
+			nvl(max(project_no), 0)+1 as projectNo from projects
+		</selectKey>
+		INSERT INTO projects
+		(project_no, member_id, project_name, content, category, open, human, how, start_mon, end_mon, reg_date, count, img, project_id)
+		VALUES (#{projectNo}, #{memberId}, #{projectName}, #{content}, #{category}, '모집중', #{human}, #{how}, #{startMon}, #{endMon}, sysdate, 0, #{img}, #{projectId})
+	</insert>
+	
+	<!-- 수정 -->
+	<insert id="updateProject">
+		UPDATE projects 
+			SET member_id = #{memberId},
+				project_name = #{projectName},
+				content = #{content},
+				category = #{category},
+				open = #{open},
+				human = #{human},
+				how = #{how},
+				start_mon = #{startMon},
+				end_mon = #{endMon},
+				reg_date = sysdate,
+				count = 0,
+				img = #{img}
+			WHERE project_no = #{projectNo}
+	</insert>
+	<!-- 플젝멤버승인 -->
+	<update id="updatePmember" 
+	parameterType="ProjectConsVO">
+		UPDATE projectcons 
+			SET status = '승인완료',
+				approval_date = sysdate
+			WHERE projectcons_no = #{projectconsNo}
+	</update>
+	<!-- 모집상태수정 -->
+	<insert id="updateOpen">
+		UPDATE projects 
+			SET open = '모집완료'
+			WHERE project_no = #{projectNo}
+	</insert>
+	
+	<!-- 삭제 -->
+	<delete id="deleteProject" parameterType="int">
+		delete from projects
+		where project_no = #{projectNo}
+	</delete>
+	<!-- 플젝거절 -->
+	<delete id="deleteProjectStatus" parameterType="int">
+		delete from projectcons
+		where projectcons_no = #{projectconsNo}
+	</delete>
+	
+	<!-- 댓글조회 -->
+	<select id="getProjectRepListAll" resultType="ProjectRepVO"
+		parameterType="int">
+		SELECT * FROM projectreps WHERE project_no = #{projectNo} ORDER BY reg_date desc
+	</select>
+	
+	<!-- 댓글등록 -->
+	<insert id="insertProjectRep" parameterType="ProjectRepVO">
+		<selectKey order="BEFORE" keyProperty="projectrepNo"
+			resultType="int">
+			select
+			nvl(max(projectrep_no), 0)+1 as projectrepNo from projectreps
+		</selectKey>
+		INSERT INTO projectreps
+		(projectrep_no,  member_id, content, reg_date, project_no)
+		VALUES (#{projectrepNo}, #{memberId}, #{content}, sysdate, #{projectNo})
+	</insert>
+	
+	<!-- 댓글삭제 -->
+	<delete id="deleteProjectRep" parameterType="int">
+		delete from projectreps
+		where projectrep_no = #{projectrepNo}
+	</delete>
+	
+	<!-- 댓글수정 -->
+	<insert id="updateProjectRep">
+		UPDATE projectreps 
+			SET content = #{content}, reg_date = sysdate
+			WHERE projectrep_no = #{projectrepNo}
+	</insert>
+	
+	<!-- 프로젝트신청 -->
+	<insert id="enterProject" parameterType="ProjectConsVO">
+		<selectKey order="BEFORE" keyProperty="projectconsNo"
+			resultType="int">
+			select
+			nvl(max(projectcons_no), 0)+1 as projectconsNo from projectcons
+		</selectKey>
+		INSERT INTO projectcons
+		(projectcons_no, project_no, member_id, status, apply_date, approval_date, withdraw, project_id, comemember_id)
+		VALUES (#{projectconsNo}, #{projectNo}, #{memberId}, '승인대기', sysdate, sysdate, '참가', #{projectId}, #{comememberId})
+	</insert>	
+	
+	<!-- 블로그신청 -->
+	<insert id="enterBlog" parameterType="MyBlogVO">
+		<selectKey order="BEFORE" keyProperty="myblogNo"
+			resultType="int">
+			select
+			nvl(max(myblog_no), 0)+1 as myblogNo from my_blog
+		</selectKey>
+		INSERT INTO my_blog
+		(myblog_no, member_id, blog_id, blog_type)
+		VALUES (#{myblogNo}, #{memberId}, #{blogId}, 1)
+	</insert>	
+	
+	
+	
+	
+	<!--nhj 프로젝트 승인완료시 myblog에 insert되게 하기 -->
+	<insert id="insertMyblogId" parameterType="ProjectConsVO">
+	<selectKey order="BEFORE" keyProperty="myblogNo"
+			resultType="int">
+			select nvl(max(myblog_no), 0)+1 from my_blog
+		</selectKey>
+			insert into my_blog (
+								 myblog_no, 
+								 member_id, 
+								 blog_id, 
+								 blog_type
+								 ) 
+						  values (
+						  		#{myblogNo}, 
+						  		#{memberId}, 
+						  		#{projectId},
+						  		 1)
+	</insert>
+	
+	
+	<!--nhj 블로그 폴더 삽입  -->
+	<insert id="insertFolder" parameterType="ProjectVO">
+		<selectKey keyProperty="folderNo" order="BEFORE" resultType="int">
+			select NVL(MAX(folder_no),0)+1 FROM blog_folder
+		</selectKey>
+	
+		insert into blog_folder (
+								folder_no,
+								folder_name,
+								blog_id
+								) 
+						  values 
+								(
+								#{folderNo},
+								'프로젝트',
+								#{projectId}
+								)
+	</insert>
+	
+	
+</mapper>

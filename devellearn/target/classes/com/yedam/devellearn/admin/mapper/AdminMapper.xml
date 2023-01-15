@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.admin.mapper.AdminMapper">
+
+	<!-- 신고내역 등록 -->
+	<insert id="insertReport" parameterType="ReportsVO">
+		<selectKey order="BEFORE" keyProperty="reportNo"
+			resultType="Integer">
+			select nvl(max(report_no), 0)+1 as report_no
+			from reports
+		</selectKey>
+		insert into 
+		reports (report_no, 
+				 member_id, 
+				 report_code, 
+				 content, 
+				 post_no, 
+				 post_code)
+		values (#{reportNo}, 
+				#{memberId}, 
+				#{reportCode},
+				#{content},
+				#{postNo}, 
+				#{postCode})
+	</insert>
+	
+	<!-- 신고목록 조회 -->
+	<select id="getReportList" resultType="ReportsVO">
+		select * 
+		from reports
+		where result is null
+	</select>
+	
+	<!-- 신고글조회 -->
+	<select id="getReport" resultType="ReportsVO" parameterType="ReportsVO">
+		select content
+		from ${postCode}
+		where ${colname}=#{postNo}
+	</select>
+	
+	<!-- 신고처리 -->
+	<update id="handleReport" parameterType="ReportsVO">
+		UPDATE reports
+		SET result=#{result}
+		WHERE report_no=#{reportNo}
+	</update>
+	
+	<!-- 신고글 삭제 -->
+	<delete id="deletePost" parameterType="ReportsVO">
+		DELETE FROM ${postCode}
+		WHERE ${colname}=#{postNo}
+	</delete>
+	
+	<!-- 고수신청 -->
+	<insert id="masterReq" parameterType="MasterReqVO">
+		INSERT INTO master_req
+			(member_id,
+			content,
+			file_name,
+			bank,
+			account)
+		VALUES(#{memberId},
+			   #{content},
+			   #{fileName},
+			   #{bank},
+			   #{account})
+	</insert>
+	
+	<!-- 고수신청 리스트 -->
+	<select id="getReqList" resultType="MasterReqVO">
+		select * 
+		from master_req 
+		where status = '검토중'
+	</select>
+	
+	<!-- 고수신청 처리 -->
+	<update id="handleReq" parameterType="MasterReqVO">
+	  	UPDATE master_req
+	  	SET status=#{status},
+	  		rejection=#{rejection},
+	  		accept_date=sysdate
+	  	WHERE member_id=#{memberId}
+	</update>
+	
+	
+	<!-- 수익반환대상 리스트 -->
+	<select id="getReturnList" resultType="Mymoney">
+		select l.member_id, 
+			   sum(p.price) as price, 
+			   m.bank, 
+			   m.account, 
+			   to_char(add_months(trunc(sysdate, 'MM'), -1),'rr/MM/dd') || '~' || to_char((trunc(sysdate, 'MM')-1), 'rr/MM/dd')  as period 
+		from lectures l 
+		
+		join payments p 
+		on l.lecture_no = p.lecture_no 
+		
+		join master_req m 
+		on m.member_id=l.member_id 
+		
+		where to_char(payment_date,'rr/MM/dd') 
+		between to_char(add_months(trunc(sysdate, 'MM'), -1),'rr/MM/dd') and to_char((trunc(sysdate, 'MM')-1), 'rr/MM/dd') 
+				and not (l.member_id in (select member_id 
+										 from mymoney) 
+						 and to_char(add_months(trunc(sysdate, 'MM'), -1), 'rr/MM/dd') || '~' || to_char((trunc(sysdate, 'MM')-1), 'rr/MM/dd')  
+						 in (select period 
+						 	 from mymoney))
+		group by l.member_id, m.bank, m.account
+	</select>
+	
+	<!-- 수익반환 번호조회 -->
+	<select id="getReturnNo" resultType="int">
+		select nvl(max(money_no), 0)+1 as money_no
+		from mymoney
+	</select>
+	
+	<!-- 수익반환 내역 등록 -->
+	<insert id="regReturn" parameterType="Mymoney">
+		INSERT INTO mymoney
+					(money_no,
+					member_id,
+					price,
+					bank,
+					account,
+					period,
+					deposit_date,
+					status)
+			VALUES(#{moneyNo},
+				   #{memberId},
+				   #{price},
+				   #{bank},
+				   #{account},
+				   #{period},
+				   sysdate,
+				   '정상')
+		
+	</insert>
+	
+	<!-- 경력인증 리스트 -->
+	<select id="getCareerList" resultType="CareerVO">
+		SELECT *
+		FROM career
+		WHERE status = '신청'
+	</select>
+	
+	<!-- 경력인증 리스트 -->
+	<select id="getCertiList" resultType="CertificationsVO">
+		SELECT *
+		FROM certifications
+		WHERE status = '신청'
+	</select>
+	
+	<!-- 경력인증 -->
+	<update id="careerUpdate" parameterType="CareerVO">
+		UPDATE career
+		SET status=#{status},
+			rejection=#{rejection}
+		WHERE career_no=#{careerNo}
+	</update>
+	
+	<!-- 자격인증 -->
+	<update id="certiUpdate" parameterType="CertificationsVO">
+		UPDATE certifications
+		SET status=#{status},
+			rejection=#{rejection}
+		WHERE certi_no=#{certiNo}
+	</update>
+	
+	
+</mapper>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.LectureAnswerMapper">
+	
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(answer_no), 0) + 1 as answer_no from lecture_answer 
+	</select>
+	
+	<!-- 전체조회 - 질문번호로 조회 -->
+	<select id="selectAllByQnaNo" resultType="LectureAnswerVO" parameterType="Integer">
+		select *
+		from lecture_answer
+		where qna_no = #{qnaNo}
+		order by 1 desc
+	</select>
+	
+	<!-- 단건조회 -->
+	<select id="selectOne" resultType="LectureAnswerVO" parameterType="Integer">
+		select * 
+		from lecture_answer
+		where answer_no = #{answerNo}
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insert" parameterType="LectureAnswerVO">
+		insert into lecture_answer (
+									answer_no,
+									qna_no,
+									member_id,
+									content
+								   )
+							 values(
+							 		#{answerNo},
+							 		#{qnaNo},
+							 		#{memberId},
+							 		#{content}
+							 	   )
+	</insert>
+	
+	<!-- 삭제 -->
+	<delete id="delete" parameterType="Integer">
+		delete from lecture_answer where answer_no = #{answerNo}
+	</delete>
+	
+	<!-- 수정 -->
+	<update id="update" parameterType="LectureAnswerVo">
+		update lecture_answer
+		set content = #{content}
+		where answer_no = #{answerNo}
+	</update>
+</mapper>

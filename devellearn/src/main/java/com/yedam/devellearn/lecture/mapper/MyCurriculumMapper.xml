@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.MyCurriculumMapper">
+
+	<!-- 등록 -->
+	<insert id="insert" parameterType="MyCurriculumVO">
+		insert into my_curriculums (
+									member_id, 
+									lecture_no, 
+									curr_no
+								   )
+							 	   (
+							 	    select m.member_id, m.lecture_no, c.curr_no
+									from my_lectures m
+									join curriculums c on (m.lecture_no = c.lecture_no)
+									where m.member_id = #{memberId}
+									and m.lecture_no = #{lectureNo}
+								   )
+	</insert>
+	
+	<!-- 전체조회 - 강의번호로 조회 -->
+	<select id="selectAllByLectureNo" parameterType="MyCurriculumVO" resultType="MyCurriculumVO">
+		select m.curr_no, m.lecture_no, m.member_id, m.watched_all, m.latest_watched_time, c.lecture_title, c.curr_name, c.video_src, c.play_time
+		from my_curriculums m
+		join curriculums c on (m.curr_no = c.curr_no)
+		where m.member_id = #{memberId}
+		and m.lecture_no = #{lectureNo}
+		order by 1
+	</select>
+	
+	<!-- 단건조회 - 커리큘럼번호로 조회 -->
+	<select id="selectOne" parameterType="MyCurriculumVO" resultType="MyCurriculumVO">
+		select m.curr_no, m.lecture_no, m.member_id, m.watched_all, c.lecture_title, c.curr_name, c.video_src, c.play_time
+		from my_curriculums m
+		join curriculums c on (m.curr_no = c.curr_no)
+		where m.curr_no = #{currNo}
+		and m.member_id = #{memberId}
+	</select>
+	
+	<!-- 수정 - 수강여부(watchedAll, latestWatchedTime 수정) -->
+	<update id="update" parameterType="MyCurriculumVO">
+		update my_curriculums
+		set
+		<if test="watchedAll neq null">
+			watched_all = #{watchedAll},
+		</if>
+		<if test="latestWatchedTime neq null">
+			latest_watched_time = #{latestWatchedTime}
+		</if>
+		where member_id = #{memberId}
+		and curr_no = #{currNo}
+	</update>
+
+</mapper>

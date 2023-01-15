@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.LectureMapper">
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(lecture_no), 0) + 1
+		as lecture_no from lectures
+	</select>
+
+	<!-- 강의 등록 -->
+	<insert id="insert" parameterType="LectureVO">
+		<!-- reg_date, rate, student_num, status 제외 삽입 -->
+		insert into lectures (
+							  lecture_no,
+							  member_id,
+							  title,
+							  introduce,
+							  category,
+							  price,
+							  difficulty,
+							  skill_tag,
+							  img_src
+							 )
+					  values (
+							  #{lectureNo},
+							  #{memberId},
+							  #{title},
+							  #{introduce},
+							  #{category},
+							  #{price},
+							  #{difficulty},
+							  #{skillTag},
+						 	  #{imgSrc}
+							 )
+	</insert>
+	
+	<!-- 등록 -->
+	<update id="update" parameterType="LectureVO">
+		<!-- reg_date, rate, student_num, status 제외 삽입 -->
+		update lectures set title = #{title},
+							introduce = #{introduce},
+							category = #{category},
+							price = #{price},
+							difficulty = #{difficulty},
+							skill_tag = #{skillTag},
+							img_src = #{imgSrc}
+						where lecture_no = #{lectureNo}
+	</update>
+
+	<!-- 전체조회 -->
+	<select id="selectAll" resultType="LectureVO">
+		select  l.lecture_no,
+				l.title,
+				l.member_id,
+		        m.name,
+				l.introduce,
+				l.category,
+				l.price,
+				l.difficulty,
+				l.skill_tag,
+				l.img_src,
+				(select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no =
+				l.lecture_no) as avgScore,
+				(select count(*) from my_lectures where lecture_no = l.lecture_no) as
+				learnerNum
+		from lectures l
+        join members m on (l.member_id = m.member_id)
+		where l.status = '승인'
+		order by 1
+	</select>
+	
+	<select id="selectAllByLecturer" resultType="LectureVO" parameterType="String">
+		select l.lecture_no,
+		l.title,
+		l.member_id,
+		l.introduce,
+		l.category,
+		l.price,
+		l.difficulty,
+		l.skill_tag,
+		l.img_src,
+		l.status,
+		l.rejection,
+		(select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no =
+		l.lecture_no) as avgScore,
+		(select count(*) from my_lectures where lecture_no = l.lecture_no) as
+		learnerNum
+		from lectures l
+		where member_id = #{memberId}
+		order by 1
+	</select>
+
+	<!-- 단건조회 -->
+	<select id="selectOne" resultType="LectureVO"
+		parameterType="Integer">
+		select l.lecture_no,
+		l.title,
+		l.member_id,
+		m.name,
+		l.introduce,
+		l.category,
+		l.price,
+		l.difficulty,
+		l.skill_tag,
+		l.img_src,
+		(select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no =
+		l.lecture_no) as avgScore,
+		(select count(*) from my_lectures where lecture_no = l.lecture_no) as
+		learnerNum
+		from lectures l
+		join members m on (l.member_id = m.member_id)
+		where lecture_no = #{lectureNo}
+	</select>
+
+	<!-- 미승인 조회 -->
+	<select id="getUnapproved" resultType="LectureVO">
+		select *
+		from lectures
+		where status = '미승인'
+		order by 1
+	</select>
+
+	<!-- 상태변경 -->
+	<update id="updateStatus" parameterType="LectureVO">
+		UPDATE lectures
+		SET
+		status=#{status}
+		<if test="rejection != null and !rejection.equals('')">
+		,rejection=#{rejection}
+		</if>
+		WHERE lecture_no=#{lectureNo}
+	</update>
+
+	<!-- 입문강의 -->
+	<select id="getBeginnerLecture" resultType="LectureVO">
+		select l.lecture_no,
+		l.title,
+		l.member_id,
+		m.name,
+		l.introduce,
+		l.category,
+		l.price,
+		l.difficulty,
+		l.skill_tag,
+		l.img_src,
+		(select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no =
+		l.lecture_no) as avgScore,
+		(select count(*) from my_lectures where lecture_no = l.lecture_no) as
+		learnerNum
+		from lectures l
+		join members m on (l.member_id = m.member_id)
+		where l.difficulty='초급'
+		and l.status = '승인'
+	</select>
+	<!-- 인기강의 -->
+	<select id="getHotLecture" resultType="LectureVO">
+		select l.lecture_no,
+		l.title,
+		l.member_id,
+		m.name,
+		l.introduce,
+		l.category,
+		l.price,
+		l.difficulty,
+		l.skill_tag,
+		l.img_src,
+		(select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no =
+		l.lecture_no) as avgScore,
+		(select count(*) from my_lectures where lecture_no = l.lecture_no) as
+		learnerNum
+		from lectures l
+		join members m on (l.member_id = m.member_id)
+		where l.status = '승인'
+		order by learnerNum desc
+	</select>
+
+	<!-- -->
+
+	<select id="openedLecture" parameterType="LectureVO"
+		resultType="Integer">
+		select count(*) from lectures 
+		where member_id=#{memberId} and status='승인'
+	</select>
+
+
+	
+	<!-- 스킬태그조회 -->
+	<select id="getTags" resultType="String">
+		SELECT '#' || skill_tag
+		FROM(SELECT DISTINCT initcap(regexp_substr(skill_tag, '[^# ]+', 1, LEVEL)) AS skill_tag
+			 FROM (SELECT LOWER(skill_tag) AS skill_tag
+	         	   FROM lectures)
+			 <![CDATA[CONNECT BY LEVEL< LENGTH(regexp_replace(skill_tag, '[^#]+'))+1)]]>
+	</select>
+	
+	<!-- 강의검색 -->
+	<select id="searchLecture" parameterType="Map" resultType="LectureVO">
+		select l.lecture_no, 
+		       l.title, 
+		       l.member_id, 
+		       m.name,
+		       l.introduce,
+		       l.category,
+		       l.price, 
+		       l.difficulty,
+		       l.skill_tag, 
+		       l.img_src, 
+		       l.reg_date,
+		       (select nvl(round(avg(rate), 1), 0) from lecture_review where lecture_no = l.lecture_no) as avgScore,
+		       (select count(*) from my_lectures where lecture_no = l.lecture_no) as learnerNum
+		from lectures l
+		join members m on (l.member_id = m.member_id)
+		<where >
+			l.status = '승인'
+			<if test="category != null and !category.equals('')">
+				and l.category = #{category} 
+			</if>
+			<if test="text != null and !text.equals('')">
+				and upper(l.title) like '%'||upper(#{text})||'%' 
+			</if>
+			<if test="selectTags != null and selectTags.size > 0">
+				and
+				<foreach item="item" index="index" collection="selectTags"
+					open="(" separator=" or " close=")">
+					upper(l.skill_tag) like
+					'%'||upper(#{item})||'%'
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+</mapper>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.message.mapper.MessageMapper">
+
+
+	<!-- 쪽지 게시글 번호 조회 -->
+	<select id="getNum" resultType="Integer">
+		SELECT NVL(Max(mes_no),0) + 1
+		FROM messages
+	</select>
+
+	<!-- 쪽지보내기(게시글 등록) -->
+	<insert id="insertMessage" parameterType="MessageVO">
+		<selectKey keyProperty="mesNo" order="BEFORE" resultType="Integer">
+			SELECT NVL(Max(mes_no),0) + 1 FROM messages
+		</selectKey>
+		INSERT INTO messages
+		(mes_no,
+		send_id,
+		recv_id,
+		content,
+		sent_date
+		)
+		VALUES
+		(#{mesNo}
+		,#{sendId}
+		,#{recvId}
+		,#{content}
+		, sysdate
+		)
+	</insert>
+
+	<!-- 수신쪽지 전체조회 -->
+	<select id="recvMes" resultType="MessageVO"
+		parameterType="String">
+		select * from messages where recv_id=#{recvId} order by mes_no desc
+	</select>
+
+	<!-- 발신 쪽지 전체조회 -->
+	<select id="sendMes" resultType="MessageVO">
+		select * from
+		messages where send_id=#{sendId} order by mes_no desc
+	</select>
+
+	<!-- 쪽지 상태 -->
+	<update id="updateMessage" parameterType="Integer">
+		UPDATE messages SET
+		read_unread='y', read_date=sysdate WHERE mes_no=#{mesNo}
+	</update>
+
+	<!-- 쪽지 삭제 -->
+	<delete id="deleteMessage" parameterType="int">
+		DELETE FROM messages
+		WHERE mes_no=#{mesNo}
+	</delete>
+	
+	<!-- 수신 메세지 단건조회 -->
+	<select id="mesDetails" resultType="MessageVO" parameterType="Integer">
+		select * from messages
+		where mes_no=#{mesNo}
+	</select>
+
+
+
+
+</mapper>

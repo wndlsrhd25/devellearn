@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.blog.mapper.BookmarkMapper">
+
+	<!-- 북마크 전체조회 -->
+	<select id="getBookmarkList" resultType="BlogPostVO" parameterType="String">
+		select p.* 
+			  ,(select bookmark_no
+		          from bookmark_folder
+		         where member_id = #{memberId}
+		           and post_no = p.post_no) as book
+		      ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+		  from blog_post p 
+		  join (select post_no 
+		   		  from bookmark_folder 
+		   		  where member_id = #{memberId}) b 
+		    on p.post_no = b.post_no
+	  order by p.post_no desc
+	</select>
+	
+	<!-- 북마크 게시물 수 전체 조회 -->
+	<select id="getBookmarkCnt" resultType="Integer" parameterType="String">
+	select count(p.post_no) as allCnt
+	  from blog_post p 
+	  join (select post_no 
+	   		  from bookmark_folder 
+	   		  where member_id = #{memeberId}) b 
+	    on p.post_no = b.post_no
+ 	 order by p.post_no desc
+	
+	</select>
+	
+	<!-- 북마크 폴더별 게시글 수 조회 -->
+	<select id="getBookmarkFolder" resultType="BookmarkVO" parameterType="String">
+		select book_folder_name,
+			   count(post_no) as cnt
+		  from bookmark_folder
+		 where member_id= #{memberId}
+		 group by book_folder_name
+	</select>
+
+
+	<!-- 북마크 폴더별 전체 조회 -->
+	<select id="getBookmarkFolderList" resultType="BlogPostVO" >
+	     select p.* 
+			  ,(select bookmark_no
+		             from bookmark_folder
+		            where member_id = #{memberId}
+		              and post_no = p.post_no) as book
+		      ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+		  from blog_post p 
+		       join (select post_no 
+		   		  from bookmark_folder 
+		   		  where member_id = #{memberId} and book_folder_name=#{bookFolderName}) b 
+		    on p.post_no = b.post_no
+	  order by p.post_no desc
+	</select>
+
+
+	<!-- 블로그 북마크 폴더 추가  -->
+	<insert id="insertBookmarkFolder" parameterType="BookmarkVO">
+	
+	<selectKey keyProperty="bookmarkNo" order="BEFORE" resultType="int">
+		select NVL(MAX(bookmark_no),0)+1 from bookmark_folder
+	</selectKey>
+	insert into bookmark_folder (
+								bookmark_no
+								,book_folder_name
+								,member_id
+								)
+						 values (
+						 		#{bookmarkNo}
+						 		,#{bookFolderName}
+						 		,#{memberId}
+						 		)
+	</insert>
+
+
+	<!-- 블로그 북마크 폴더 삭제  -->
+	<delete id="deleteBookmarkFolder" >
+	delete from bookmark_folder 
+	 where book_folder_name=#{bookFolderName} 
+	   and member_id=#{memberId}
+	</delete>
+
+
+	<!-- 블로그 북마크 폴더 이름 변경 -->
+	<update id="updateBookmarkName" parameterType="BookmarkVO">
+	
+	UPDATE BOOKMARK_FOLDER 
+	   SET BOOK_FOLDER_NAME = #{newBookFolderName}
+	 WHERE MEMBER_ID=#{memberId}
+	   AND BOOK_FOLDER_NAME=#{bookFolderName}
+	
+	</update>
+	
+	<!-- 북마크 등록 -->
+	<insert id="blogBookmark" parameterType="BookmarkVO">
+		<selectKey keyProperty="bookmarkNo" order="BEFORE" resultType="int">
+		select NVL(MAX(bookmark_no),0)+1 from bookmark_folder
+	</selectKey>
+		insert into bookmark_folder (
+									bookmark_no,
+									book_folder_name,
+									member_id,
+									post_no
+									) 
+							values (
+									#{bookmarkNo},
+									#{bookFolderName},
+									#{memberId},
+									#{postNo}
+									)
+		
+	</insert>
+	
+
+	<!-- 북마크 삭제 -->
+	<delete id="deleteBookmark" >
+		delete from bookmark_folder
+		where bookmark_no = #{bookmark_no}
+	
+	</delete>
+
+	<!-- 북마크 여부 판단(단건조회) -->
+	<select id="selectBookInfo" resultType="BookmarkVO">
+	    select *
+		  from bookmark_folder
+		 where post_no = #{postNo}
+		   and member_id = #{memberId}
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.blog.mapper.ProjectBlogMapper">
+
+	<!-- 프로젝트 리스트 -->
+	<select id="getProjectCard" resultType="BlogPostVO">
+		select p.project_id, p.project_name, p.start_mon, p.end_mon, p.img, project_no
+		  from projects p join (select blog_id 
+		  						  from my_blog 
+		  						 where member_id = #{memberId}) m
+			on p.project_id = m.blog_id
+	  order by p.end_mon
+	</select>
+	
+	<!-- 프로젝트 썸네일 조회 -->
+	<select id="selectProfile" resultType="String" >
+	 select distinct p.img
+	   from projects p join my_blog b
+	   on p.project_id = b.blog_id 
+    where p.project_id = #{blogId}
+	</select>
+	
+	
+	<!-- 프로젝트 게시글 전체조회 -->
+	<select id="getProjectPost" resultType="BlogPostVO">
+		select p.* 
+				  ,(select bookmark_no
+		              from bookmark_folder
+		             where member_id = #{memberId}
+		               and post_no = p.post_no) as book
+		          ,(select count(*) 
+					  from blog_likes 
+				     where post_no = p.post_no) as likes
+				      ,(select count(*)
+                  from blog_comments
+                 where post_no = p.post_no) as comments
+		  from blog_post p
+	     where blog_id = #{blogId} and (p.read_status='전체공개'
+		<if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id from my_blog where member_id = #{memberId})) 
+            or ( p.read_status='비공개' and p.member_id =#{memberId})  
+         </if>	  		  
+		)order by post_no desc
+	</select> 
+	
+	<!-- 프로젝트 폴더별 조회 -->
+	<select id="projectFolderInfo" parameterType="BlogPostVO" resultType="BlogPostVO">
+		select p.* 
+				  ,(select bookmark_no
+		              from bookmark_folder
+		             where member_id = #{memberId}
+		               and post_no = p.post_no) as book
+		          ,(select count(*) 
+					  from blog_likes 
+				     where post_no = p.post_no) as likes
+				      ,(select count(*)
+                 		  from blog_comments
+                 		 where post_no = p.post_no) as comments
+		 from blog_post p
+	    where blog_id = #{blogId} and p.folder_name = #{folderName} and (p.read_status='전체공개'
+		<if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id from my_blog where member_id = #{memberId})) 
+            or ( p.read_status='비공개' and p.member_id =#{memberId})  
+         </if>
+  		  
+		)order by post_no desc
+	</select> 
+	
+	<!-- 프로젝트 검색어 조회 -->
+	<select id="searchProjectPost" resultType="BlogPostVO">
+		select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+			  ,(select count(*)
+	              from blog_comments
+	             where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where blog_id = #{blogId} and ((title LIKE '%'|| #{keyword} ||'%' OR content LIKE '%'|| #{keyword} ||'%') 
+  		 <if test="tags !=null">
+  		 and tags like '%'|| #{tags} ||'%'
+  		 </if>
+  		 ) and (p.read_status='전체공개'
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id 
+            											   from my_blog 
+            											  where member_id = #{memberId}) 
+            											    and ((title LIKE '%'|| #{keyword} ||'%' OR content LIKE '%'|| #{keyword} ||'%')
+            											    <if test="tags !=null">
+            											    and tags like '%'|| #{tags} ||'%'
+            											    </if>
+            											    ))
+            or ( p.read_status='비공개' and p.member_id =#{memberId} and ((title LIKE '%'|| #{keyword} ||'%' OR content LIKE '%'|| #{keyword} ||'%')
+            															<if test="tags != null">
+            															and tags like '%'|| #{tags} ||'%'
+            															</if>														))  
+         </if>  		  	  		  
+		) order by post_no desc
+	</select> 
+	
+	<!-- 프로젝트 탈퇴 -->
+	<delete id="deleteProjectBlog">
+		delete from my_blog
+		where blog_id = #{blogId} and member_id =#{memberId}
+	</delete>
+	
+	
+	<!-- 프로젝트 탈퇴시 모집완료->탈퇴로 변경  -->
+	<update id="updateProjectInfo" parameterType="BlogPostVO">
+	update projectcons 
+	   set status = '탈퇴'
+	 where member_id =#{memberId} and blog_id = #{blogId}
+	
+	</update>
+	
+	
+	<!-- 프로젝게트 참여 여부  -->
+	<select id="selectPorjectId" resultType="Integer">
+	select count(*)
+	from my_blog 
+	where blog_id = #{blogId} and member_id=#{memberId}
+	</select>
+
+</mapper>

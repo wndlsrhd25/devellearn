@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.company.mapper.CompanyMapper">
+
+	<!-- 기업리스트 조회 -->
+	<select id="getList" resultType="CompanyVO" parameterType="Map">
+		select c.*, 
+				nvl((select trunc(avg(rate), 1) 
+		 		from com_reviews r 
+		 		where c.com_no = r.com_no), 0) as avg_rate
+		 	<choose>
+				<when test="memberId != null and !memberId.equals('')">
+				 , l.member_id as bookmarkId
+				</when>
+				<otherwise>
+				 , null as bookmarkId
+				</otherwise>
+			</choose>	
+		from company c
+		<if test="memberId != null and !memberId.equals('')">
+			left outer join com_likes l
+			on c.com_no = l.com_no
+			and l.member_id=#{memberId}
+		</if>
+	</select>
+	
+	<!-- 검색 -->
+	<select id="getCompanyFilter" parameterType="java.util.HashMap"
+		resultType="CompanyVO">
+		select *
+		from (SELECT a.*, 
+		             nvl(c.avg_rate,0)as avg_rate,
+					 nvl(c.avg_salrate,0) as avg_salrate, 
+					 nvl(c.avg_wlbrate,0) as avg_wlbrate
+				<choose>
+					<when test="memberId != null and !memberId.equals('')">
+					 , l.member_id as bookmarkId
+					</when>
+					<otherwise>
+					 , null as bookmarkId
+					</otherwise>
+				</choose>
+					
+				FROM company a
+				left outer join (SELECT com_no, 
+										TRUNC(AVG(rate), 1) as avg_rate,
+										TRUNC(AVG(salary_rate), 1) as avg_salrate,
+										TRUNC(AVG(wlb_rate), 1) as
+										avg_wlbrate
+						          FROM com_reviews
+					              group by com_no) c
+				on a.com_no = c.com_no
+			<if test="memberId != null and !memberId.equals('')">
+				left outer join com_likes l
+				on a.com_no = l.com_no
+				and l.member_id=#{memberId}
+			</if>)
+		<where>
+			<if test="skillList != null and skillList.size>0">
+				and
+				<foreach item="item" index="index" collection="skillList"
+					open="(" separator=" and " close=")">
+					upper(skill) like
+					'%'||upper(#{item})||'%'
+				</foreach>
+			</if>
+			<if test="jobTypeList != null and jobTypeList.size>0">
+				and
+				<foreach item="item" index="index" collection="jobTypeList"
+					open="(" separator=" and " close=")">
+					upper(job_type) like
+					'%'||upper(#{item})||'%'
+				</foreach>
+			</if>
+			<if test="comSizeList != null and comSizeList.size>0">
+				and
+				<foreach item="item" index="index" collection="comSizeList"
+					open="com_size in (" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			<if test="avgRate != null and avgRate != ''">
+				AND avg_rate >= #{avgRate}
+			</if>
+			<if test="condition != null and !condition.equals('')">
+				AND (upper(name) like '%'||upper(#{condition})||'%')
+			</if>
+		</where>
+	</select>
+	
+	<!-- 단건조회 -->
+	<select id="getCompany" parameterType="Map" resultType="CompanyVO">
+		select c.*, 
+				nvl(r.avg_rate,0) as	avg_rate,
+			   	nvl(r.avg_salrate,0) as avg_salrate, 
+			   	nvl(r.avg_wlbrate,0) as avg_wlbrate
+		 	<choose>
+				<when test="memberId != null and !memberId.equals('')">
+				 , l.member_id as bookmarkId
+				</when>
+				<otherwise>
+				 , null as bookmarkId
+				</otherwise>
+			</choose>	
+		from company c
+		left outer join (SELECT com_no, 
+						 		TRUNC(AVG(rate),1) as avg_rate,
+						 		TRUNC(AVG(salary_rate),1) as avg_salrate,
+						 		TRUNC(AVG(wlb_rate),1) as avg_wlbrate
+						 FROM com_reviews
+						 group by com_no) r
+		on r.com_no = c.com_no
+		<if test="memberId != null and !memberId.equals('')">
+			left outer join com_likes l
+			on c.com_no = l.com_no
+			and l.member_id=#{memberId}
+		</if>
+		where c.com_no = #{comNo}
+	</select>
+	
+	<!-- 관심기업 조회 -->
+	<select id="getLikeList" resultType="CompanyVO" parameterType="Map">
+		SELECT c.*, 
+				nvl(r.avg_rate,0) as avg_rate,
+				nvl(r.avg_salrate,0) as avg_salrate, 
+				nvl(r.avg_wlbrate,0) as avg_wlbrate,
+				l.member_id as bookmarkId
+				
+		FROM company c 
+        left outer join (SELECT com_no, 
+        						TRUNC(AVG(rate),1) as avg_rate,
+                         		TRUNC(AVG(salary_rate),1) as avg_salrate,
+                         		TRUNC(AVG(wlb_rate),1) as avg_wlbrate
+                         FROM com_reviews
+                         group by com_no) r
+		on r.com_no = c.com_no
+		
+		join com_likes l
+		on c.com_no = l.com_no
+		where l.member_id=#{memberId}
+		
+	</select>
+	
+	<!-- 관심기업 등록 -->
+	<insert id="likeCompany" parameterType="RecruitLikesVO">
+		<selectKey order="BEFORE" keyProperty="likeNo"
+			resultType="Integer">
+			select nvl(max(like_no), 0)+1 as like_no from
+			com_likes
+		</selectKey>
+		insert into com_likes values (#{likeNo}, #{memberId} , #{comNo})
+	</insert>
+	
+	<!-- 관심기업 삭제 -->
+	<delete id="deleteLikeCompany" parameterType="RecruitLikesVO">
+		delete from com_likes
+		where com_no = #{comNo}
+			  and member_id = #{memberId}
+	</delete>
+	
+	<!-- 리뷰전체조회 -->
+	<select id="getReviewList" resultType="ComReviewsVO" parameterType="int">
+		select * 
+		from com_reviews 
+		where com_no = #{comNo}
+	</select>
+	
+	<!-- 리뷰등록 -->
+	<insert id="registReview" parameterType="ComReviewsVO">
+		<selectKey order="BEFORE" keyProperty="reviewNo" resultType="Integer">
+			select nvl(max(review_no), 0)+1 as review_no 
+			from com_reviews
+		</selectKey>
+		insert into 
+		com_reviews (REVIEW_NO, 
+					COM_NO, 
+					WRITER, 
+					CATEGORY, 
+					CAREER, 
+					RATE, 
+					CONTENT, 
+					ADVANTAGE, 
+					DISADVANTAGE, 
+					SALARY_RATE, 
+					WLB_RATE, 
+					ATMOSPHERE, 
+					POTENTIAL, 
+					ABOUT_CEO, 
+					RECOMMEND, 
+					NAME)
+		 values (#{reviewNo}, 
+		 		#{comNo}, 
+		 		#{writer}, 
+		 		#{category}, 
+		 		#{career},
+		 		#{rate},
+		 		#{content},
+		 		#{advantage},
+		 		#{disadvantage},
+		 		#{salaryRate},
+		 		#{wlbRate},
+		 		#{atmosphere},
+		 		#{potential},
+		 		#{aboutCeo},
+		 		#{recommend},
+		 		#{name}	)
+	</insert>
+	
+	<!-- 리뷰수정 -->
+	<update id="updateReview" parameterType="ComReviewsVO">
+		update com_reviews
+		set CATEGORY = #{category}, 
+			CAREER = #{career}, 
+			RATE = #{rate}, 
+			CONTENT = #{content},
+			ADVANTAGE = #{advantage}, 
+			DISADVANTAGE = #{disadvantage}, 
+			SALARY_RATE = #{salaryRate}, 
+			WLB_RATE = #{wlbRate}, 
+			ATMOSPHERE =#{atmosphere}, 
+			POTENTIAL = #{potential},
+			ABOUT_CEO = #{aboutCeo}, 
+			RECOMMEND = #{recommend}, 
+			NAME = #{name}
+		where REVIEW_NO = #{reviewNo}
+	</update>
+	
+	<!-- 리뷰삭제 -->
+	<delete id="deleteReview" parameterType="int">
+		delete from com_reviews
+		where REVIEW_NO = #{reviewNo}
+	</delete>
+	
+	<!-- 면접통계 -->
+	<select id="interviewStat" parameterType="int" resultType="Map">
+		select atmosphere as data,
+				round(RATIO_TO_REPORT(count(atmosphere)) OVER ()*100) ratio
+		from INTERVIEW_REVIEWS
+		where com_no = #{comNo}
+		group by atmosphere
+		union
+		select result,
+				round(RATIO_TO_REPORT(count(result)) OVER ()*100) ratio
+		from INTERVIEW_REVIEWS
+		where com_no = #{comNo}
+		group by result
+		union
+		select 'difficulty', 
+				nvl(trunc(avg(difficulty), 1), 0) as difficulty 
+		from INTERVIEW_REVIEWS
+		where com_no = #{comNo}
+	</select>
+	
+	<!-- 면접후기 전체조회 -->
+	<select id="getInterviewList" resultType="InterviewReviewsVO" parameterType="Map">
+		select * 
+		from INTERVIEW_REVIEWS 
+		where com_no = #{comNo}
+	</select>
+	
+	<!-- 면접후기 등록 -->
+	<insert id="registInterview" parameterType="InterviewReviewsVO">
+		<selectKey order="BEFORE" keyProperty="reviewNo" resultType="Integer">
+			select nvl(max(review_no), 0)+1 as review_no 
+			from INTERVIEW_REVIEWS
+		</selectKey>
+		insert into 
+		INTERVIEW_REVIEWS (REVIEW_NO, 
+							COM_NO, 
+							WRITER, 
+							difficulty, 
+							content, 
+							atmosphere, 
+							result, 
+							question)
+		 values (#{reviewNo}, 
+		 		#{comNo}, 
+		 		#{writer}, 
+		 		#{difficulty}, 
+		 		#{content},
+		 		#{atmosphere},
+		 		#{result},
+		 		#{question})
+	</insert>
+	
+	<!-- 면접후기 수정 -->
+	<update id="updateInterview" parameterType="InterviewReviewsVO">
+		update INTERVIEW_REVIEWS
+		set difficulty = #{difficulty}, 
+			content = #{content}, 
+			atmosphere = #{atmosphere}, 
+			result = #{result},
+			question = #{question}
+		where REVIEW_NO = #{reviewNo}
+	</update>
+	
+	<!-- 면접후기 삭제 -->
+	<delete id="deleteInterview" parameterType="int">
+		delete from INTERVIEW_REVIEWS
+		where REVIEW_NO = #{reviewNo}
+	</delete>
+	
+	
+	<!-- 기업정보 수정 -->
+	<update id="editCompany" parameterType="CompanyVO">
+		UPDATE company
+		SET 
+		<if test="img!=null and !img.equals('')">
+			img=#{img},
+		</if>
+			job_type=#{jobType},
+			introduce=#{introduce}
+		WHERE com_no=#{comNo}
+	</update>
+</mapper>

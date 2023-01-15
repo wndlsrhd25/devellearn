@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.LectureQnaLikeMapper">
+	
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(like_no), 0) + 1 as like_no from lecture_qna_like
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insert" parameterType="LectureQnaLikeVO">
+		insert into lecture_qna_like values (#{likeNo}, #{qnaNo}, #{memberId})
+	</insert>
+	
+	<!-- 삭제 -->
+	<delete id="delete" parameterType="Integer">
+		delete from lecture_qna_like where like_no = #{likeNo}
+	</delete>
+	
+	<!-- 단건조회 -->
+	<select id="selectOne" parameterType="LectureQnaLikeVO" resultType="LectureQnaLikeVO">
+		select *
+		from lecture_qna_like
+		where qna_no = #{qnaNo}
+		and member_id = #{memberId}
+	</select>
+	
+	<!-- 좋아요 수 -->
+	<select id="selectAllCntByQnaNo" parameterType="Integer" resultType="Integer">
+		select count(*) 
+		from lecture_qna_like
+		where qna_no = #{qnaNo}
+	</select>
+</mapper>

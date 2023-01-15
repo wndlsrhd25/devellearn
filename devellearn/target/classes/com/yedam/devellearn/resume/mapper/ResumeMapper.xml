@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.resume.mapper.ResumeMapper">
+
+	<!-- 기본정보 등록 (주소 등록) -->
+	<update id="updateAddr" parameterType="Map">
+		update members
+		set
+		address=#{address},
+		address_d=#{addressD}
+		where member_id=#{memberId}
+	</update>
+
+	<!-- 경력사항 등록 -->
+	<insert id="insertCareer" parameterType="CareerVO">
+		<selectKey keyProperty="careerNo" order="BEFORE"
+			resultType="Integer">
+			SELECT NVL(Max(career_no),0) + 1 FROM career
+		</selectKey>
+		INSERT INTO career
+		(career_no
+		,member_id
+		,company
+		,dept
+		,task
+		,position
+		,job_type
+		,job_status
+		,job_period
+		<if test='certiFile != null and !certiFile.equals("")'>
+			,certi_file
+			,status
+			,apply_date
+		</if>
+
+		)
+		VALUES
+		(#{careerNo}
+		,#{memberId}
+		,#{company}
+		,#{dept}
+		,#{task}
+		,#{position}
+		,#{jobType}
+		,#{jobStatus}
+		,#{jobPeriod}
+		<if test='certiFile != null and !certiFile.equals("")'>
+			,#{certiFile}
+			,'신청'
+			, sysdate
+		</if>
+		)
+	</insert>
+
+
+	<!-- 이력서 작성하기 누르면 회원상태도 마이레쥬메 Y로 바꿔줘야함★★★ -->
+
+
+	<!-- 등록된 경력사항 조회 -->
+	<select id="selectCareer" resultType="CareerVO"
+		parameterType="String">
+		select * from career where member_id=#{memberId} order
+		by job_period desc
+	</select>
+
+	<!-- 경력사항 수정 -->
+	<update id="updateCareer" parameterType="CareerVO">
+
+		UPDATE career SET
+		member_id=#{memberId}
+		, company=#{company}
+		,
+		dept=#{dept}
+		, task=#{task}
+		, position=#{position}
+		, job_type=#{jobType}
+		, job_status=#{jobStatus}
+		, job_period=#{jobPeriod}
+		<if test='certiFile != null and !certiFile.equals("")'>
+			, certi_File=#{certiFile}
+			, status='신청'
+			, apply_date =
+			sysdate
+		</if>
+		where career_no=#{careerNo}
+	</update>
+
+
+	<!-- 경력사항 삭제 -->
+	<delete id="deleteCareer" parameterType="int">
+		DELETE FROM career
+		where
+		career_no=#{careerNo}
+	</delete>
+
+
+
+	<!-- 프로젝트 등록 -->
+	<insert id="insertMyProj" parameterType="MyprojectVO">
+		<selectKey keyProperty="projectNo" order="BEFORE"
+			resultType="Integer">
+			SELECT NVL(Max(project_no),0) + 1 FROM myproject
+		</selectKey>
+		INSERT INTO myproject
+		(project_no
+		,member_id
+		,project_name
+		,project_content
+		,period
+		,project_link
+		)
+		VALUES
+		(#{projectNo}
+		,#{memberId}
+		,#{projectName}
+		,#{projectContent}
+		,#{period}
+		,#{projectLink}
+		)
+	</insert>
+
+	<!-- 프로젝트 수정 -->
+	<update id="updateProj" parameterType="MyprojectVO">
+		UPDATE myproject SET
+		member_id=#{memberId}
+		, project_name=#{projectName}
+		,
+		project_content=#{projectContent}
+		, period=#{period}
+		,
+		project_link=#{projectLink}
+		where project_no=#{projectNo}
+	</update>
+
+
+	<!-- 프로젝트 삭제 -->
+	<delete id="deleteProj" parameterType="int">
+		DELETE FROM myproject
+		where project_no=#{projectNo}
+	</delete>
+
+
+
+	<!-- 교육사항 인서트 -->
+
+	<insert id="insertEdu" parameterType="EducationsVO">
+		<selectKey keyProperty="eduNo" order="BEFORE"
+			resultType="Integer">
+			SELECT NVL(Max(edu_no),0) + 1 FROM educations
+		</selectKey>
+		INSERT INTO educations
+		(edu_no
+		,member_id
+		,edu_insti
+		,edu_title
+		,edu_status
+		,edu_period
+		)
+		VALUES
+		(#{eduNo}
+		,#{memberId}
+		,#{eduInsti}
+		,#{eduTitle}
+		,#{eduStatus}
+		,#{eduPeriod}
+		)
+	</insert>
+
+
+	<!-- 교육사항 수정 -->
+
+	<update id="updateEdu" parameterType="EducationsVO">
+		UPDATE educations SET
+		member_id=#{memberId}
+		, edu_insti=#{eduInsti}
+		, edu_title=#{eduTitle}
+		,
+		edu_status=#{eduStatus}
+		, edu_period=#{eduPeriod}
+		where edu_no=#{eduNo}
+	</update>
+
+	<!-- 교육사항 삭제 -->
+	<delete id="deleteEdu" parameterType="int">
+		DELETE FROM educations
+		where edu_no=#{eduNo}
+	</delete>
+
+
+
+
+	<!-- 자격증 인서트 -->
+	<insert id="insertCerti" parameterType="CertificationsVO">
+		<selectKey keyProperty="certiNo" order="BEFORE"
+			resultType="Integer">
+			SELECT NVL(Max(certi_no),0) + 1 FROM certifications
+		</selectKey>
+		INSERT INTO certifications
+		(certi_no
+		,member_id
+		,certi_name
+		,score
+		,institution
+		,ACQ_DATE
+		<if test='certiFile != null and !certiFile.equals("")'>
+			,certi_file
+			,status
+			,apply_date
+		</if>
+		)
+		VALUES
+		(#{certiNo}
+		,#{memberId}
+		,#{certiName}
+		,#{score}
+		,#{institution}
+		,#{acqDate}
+		<if test='certiFile != null and !certiFile.equals("")'>
+			,#{certiFile}
+			,'신청'
+			,sysdate
+		</if>
+		)
+	</insert>
+
+
+	<!-- 자격사항 수정 -->
+
+	<update id="updateCerti" parameterType="CertificationsVO">
+
+		UPDATE certifications SET
+		member_id=#{memberId}
+		,certi_name=#{certiName}
+		, score=#{score}
+		, institution=#{institution}
+		, acq_date=#{acqDate}
+
+		where certi_no=#{certiNo}
+		
+	</update>
+
+
+	<!-- 자격사항 삭제 -->
+	<delete id="deleteCerti" parameterType="int">
+		DELETE FROM
+		certifications
+		where certi_no=#{certiNo}
+	</delete>
+
+
+
+
+
+
+	<!-- 기본정보 등록 (주소 등록) -->
+	<update id="updateIntro" parameterType="Map">
+		update members
+		set
+		introduction=#{introduction}
+		where member_id=#{memberId}
+	</update>
+
+	<!-- 나의 스킬 등록 -->
+	<update id="updateMySkill" parameterType="MemberVO">
+		update members
+		set
+		skill
+		= #{skill}
+		where member_id=#{memberId}
+	</update>
+
+	<!-- 나의 이력서, Y상태로 업데이트 -->
+	<update id="resumeYes" parameterType="String">
+		update members set
+		my_resume='y'
+		where member_id=#{memberId}
+	</update>
+
+	<!-- 경력 신청사항 목록 조회 -->
+	<select id="applyCareer" resultType="CareerVO"
+		parameterType="CareerVO">
+		select * from career where member_id=#{memberId} and
+		certi_file is not null order by apply_date desc
+	</select>
+
+
+	<!-- 자격 신청사항 목록 조회 -->
+	<select id="applyCerti" resultType="CertificationsVO"
+		parameterType="CertificationsVO">
+		select * from certifications where member_id=#{memberId}
+		and certi_file is not null order by apply_date desc
+	</select>
+
+
+
+
+
+	<!-- 이력서 각 항목 리스트 가져오기 -->
+	<!-- 교육 -->
+	<select id="getEduList" parameterType="MemberVO"
+		resultType="EducationsVO">
+		select *
+		from educations
+		where member_id = #{memberId}
+	</select>
+	<!-- 자격증 -->
+	<select id="getCertList" parameterType="MemberVO"
+		resultType="CertificationsVO">
+		select *
+		from certifications
+		where member_id = #{memberId}
+	</select>
+	<!-- 프로젝트 -->
+	<select id="getProjectList" parameterType="MemberVO"
+		resultType="MyprojectVO">
+		select *
+		from myproject
+		where member_id = #{memberId}
+	</select>
+	<!-- 경력 -->
+	<select id="getCareerList" parameterType="MemberVO"
+		resultType="CareerVO">
+		select *
+		from career
+		where member_id = #{memberId}
+	</select>
+	<!-- 스킬리스트 -->
+	<select id="getSkillList" parameterType="MemberVO"
+		resultType="LectureVO">
+		select distinct l.skill_tag
+		from my_lectures m
+		join lectures l
+		on l.lecture_no = m.lecture_no
+		where m.member_id=#{memberId}
+	</select>
+
+
+	<!-- 지원이력 가져오기 -->
+	<select id="getApplyList" parameterType="String"
+		resultType="RecruitHistoryVO">
+		SELECT H.*,
+		R.title,
+		C.NAME,
+		R.end_date
+		FROM recruit_history H
+		JOIN recruit R
+		ON H.recruit_no = R.recruit_no
+		JOIN company C
+		ON C.com_no
+		= R.com_no
+		WHERE
+		member_id = #{memberId}
+		order by history_no desc
+	</select>
+
+	<!-- 지원취소 -->
+	<update id="withdrawApply" parameterType="RecruitHistoryVO">
+		UPDATE recruit_history
+		SET status='취소'
+		WHERE history_no=#{historyNo}
+	</update>
+
+	<!-- DEVELLEARN 프로젝트 활동내역 INSERT -->
+
+	<insert id="insertDevelProj" parameterType="MyprojectVO">
+		<selectKey keyProperty="projectNo" order="BEFORE" resultType="Integer">
+			select nvl(max(PROJECT_NO),0) as PROJECT_NO from myproject
+		</selectKey>
+		insert into myproject (PROJECT_NO, member_id, PROJECT_NAME, period,PROJECT_LINK)
+		SELECT #{projectNo}+rownum, B.comemember_id, A.project_name,
+		to_char(A.start_MON, 'yyyy-MM') || ' ' || to_char(A.end_MON, 'yyyy-MM'),
+		'http://43.200.201.245:85/projectHome?blogId='||A.project_id as	PROJECT_LINK
+		FROM projects A
+		JOIN projectcons B ON A.project_no = B.project_no
+		WHERE B.comemember_id = #{memberId}
+		AND B.status = '승인완료' ORDER BY B.project_no desc
+	</insert>
+
+
+	<!--DEVELLEARN 교육사항 INSERT -->
+
+	<insert id="insertDevelEdu" parameterType="EducationsVO">
+		<selectKey keyProperty="eduNo" order="BEFORE" resultType="Integer">
+			select nvl(max(edu_no),0) as edu_no from educations
+		</selectKey>
+		insert into educations (edu_no, member_id, edu_title, edu_status, edu_insti)
+		select #{eduNo}+rownum, m.member_id, l.title, '수료', 'devellearn'
+		from lectures l join my_lectures m 
+		on (l.lecture_no = m.lecture_no)
+		where m.member_id= #{memberId}
+		and complete_status = '완료'
+	</insert>
+
+
+
+
+
+
+
+</mapper>
+

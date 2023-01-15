@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.lecture.mapper.CartMapper">
+	
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(cart_no), 0) + 1 as cart_no from carts
+	</select>
+	
+	<!-- 장바구니 전체 조회 - 회원아이디로 조회 -->
+	<select id="selectAllByMemberId" resultType="CartVO" parameterType="String">
+		select distinct c.cart_no, 
+			   c.member_id, 
+			   c.lecture_no, 
+			   l.img_src, 
+			   l.member_id as lecturer, 
+			   l.title, 
+			   (select count(*) from my_lectures where lecture_no = c.lecture_no) as learnerNum, 
+			   l.price
+		from carts c
+		join lectures l on (c.lecture_no = l.lecture_no)
+		where c.member_id = #{memberId}
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insert" parameterType="CartVO">
+		insert into carts values(#{cartNo}, #{memberId}, #{lectureNo})
+	</insert>
+	
+	<!-- 단건삭제 -->
+	<delete id="delete" parameterType="Integer">
+		delete from carts where cart_no = #{cartNo}
+	</delete>
+		
+	<!-- 여러건 삭제 -->
+	<delete id="deleteSelectedCart" parameterType="Map">
+		delete from carts 
+		where cart_no in 
+		<!-- 삭제할 cartNo 배열 받음 : map 안에 있는 데이터를 collection 키값을 이용해 받음 -> List<Integer> 가 담김  -->
+		<foreach collection="cartNoArr" item="item" index="index" open="(" close=")" separator=",">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<!-- 전체삭제 - 회원아이디로 삭제 -->
+	<delete id="deleteAllByMemberId" parameterType="String">
+		delete from carts where member_id = #{memberId}
+	</delete>
+</mapper>

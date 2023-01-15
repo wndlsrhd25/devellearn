@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.recruit.mapper.RecruitMapper">
+
+	<!-- 전체조회 -->
+	<select id="getRecruitListAll" resultType="RecruitVO" parameterType="Map">
+		select r.RECRUIT_NO,
+			   nvl((select trunc(avg(rate), 1) 
+				    from com_reviews c 
+				     where c.com_no = r.com_no), 0) as avg_rate,
+			    r.END_DATE, 
+			    r.COM_NO, 
+				r.TITLE, 
+			  	r.JOB_TYPE,
+			  	r.CAREER, 
+				r.EMP_TYPE, 
+				r.SALARY, 
+				r.INTRODUCE, 
+				r.JOB_DETAIL,
+				r.ADVANTAGE, 
+				r.ETC,
+				r.CONTACT, 
+				r.REG_DATE, 
+				r.SKILL, 
+				r.IMG, 
+				r.name
+				<choose>
+					<when test="memberId != null and !memberId.equals('')">
+						 , l.member_id as bookmarkId
+					</when>
+					<otherwise>
+						 , null as bookmarkId
+					</otherwise>
+				</choose>
+				
+		from recruit r
+		<if test="memberId != null and !memberId.equals('')">
+				left outer join recruit_likes l
+				on r.recruit_no = l.recruit_no
+		          and l.member_id=#{memberId}
+		</if>
+		where (to_char(end_date, 'yyyymmdd') >= to_char(sysdate, 'yyyymmdd')
+			   or end_date is null) 
+	</select>
+	
+
+	<!-- 검색 -->
+	<select id="getRecruitFilter" parameterType="java.util.HashMap"
+		resultType="RecruitVO">
+		select *
+		from (SELECT nvl(c.avg_rate,0)as avg_rate,
+					 nvl(c.avg_salrate,0) as avg_salrate, 
+					 nvl(c.avg_wlbrate,0) as avg_wlbrate, 
+					 r.recruit_no, 
+		             r.com_no, 
+					 r.title, 
+					 r.end_date,
+					 r.job_type,
+					 r.career, 
+					 r.emp_type,
+				   	 r.salary, 
+				   	 r.introduce, 
+				   	 r.job_detail,
+					 r.advantage, 
+					 r.etc, 
+					 r.contact,
+					 r.reg_date, 
+					 r.skill, 
+					 r.img, 
+					 r.name
+				<choose>
+					<when test="memberId != null and !memberId.equals('')">
+					 , l.member_id as bookmarkId
+					</when>
+					<otherwise>
+					 , null as bookmarkId
+					</otherwise>
+				</choose>
+					
+				FROM recruit r 
+				left outer join (SELECT com_no, 
+										TRUNC(AVG(rate), 1) as avg_rate,
+										TRUNC(AVG(salary_rate), 1) as avg_salrate,
+										TRUNC(AVG(wlb_rate), 1) as
+										avg_wlbrate
+						          FROM com_reviews
+					              group by com_no) c
+				on r.com_no = c.com_no
+			<if test="memberId != null and !memberId.equals('')">
+				left outer join recruit_likes l
+				on r.recruit_no = l.recruit_no
+				and l.member_id=#{memberId}
+			</if>)
+		<where>
+			(to_char(end_date, 'yyyymmdd') >= to_char(sysdate, 'yyyymmdd')
+			or end_date is null) 
+			<if test="skillList != null and skillList.size>0">
+				and
+				<foreach item="item" index="index" collection="skillList"
+					open="(" separator=" or " close=")">
+					upper(skill) like
+					'%'||upper(#{item})||'%'
+				</foreach>
+			</if>
+			<if test="careerList != null and careerList.size>0">
+				and
+				<foreach item="item" index="index" collection="careerList"
+					open="career in (" separator=", " close=")">
+					#{item}
+				</foreach>
+			</if>
+			<if test="jobTypeList != null and jobTypeList.size>0">
+				and
+				<foreach item="item" index="index" collection="jobTypeList"
+					open="(" separator=" or " close=")">
+					upper(job_type) like
+					'%'||upper(#{item})||'%'
+				</foreach>
+			</if>
+			<if test="empTypeList != null and empTypeList.size>0">
+				and
+				<foreach item="item" index="index" collection="empTypeList"
+					open="emp_type in (" separator=", " close=")">
+					#{item}
+				</foreach>
+			</if>
+			<if test="avgRate != null and avgRate != ''">
+				AND avg_rate >= #{avgRate}
+			</if>
+			<if test="condition != null and !condition.equals('')">
+				AND (upper(name) like '%'||upper(#{condition})||'%'
+				OR upper(title) like '%'||upper(#{condition})||'%')
+			</if>
+		</where>
+	</select>
+
+	<!-- 단건조회 -->
+	<select id="getRecruit" resultType="RecruitVO" parameterType="Map">
+		SELECT r.recruit_no, 
+		       r.com_no, 
+		       nvl(c.avg_rate,0) as	avg_rate,
+			   nvl(c.avg_salrate,0) as avg_salrate, 
+			   nvl(c.avg_wlbrate,0) as avg_wlbrate,
+			   r.title,
+			   r.end_date,
+			   r.job_type,
+			   r.career,
+			   r.emp_type,
+		 	   r.salary, 
+		 	   r.introduce, 
+		 	   r.job_detail,
+			   r.advantage, 
+			   r.etc, 
+			   r.contact,
+			   r.reg_date, 
+			   r.skill, 
+			   r.img, 
+			   r.name
+		<choose>
+			<when test="memberId != null and !memberId.equals('')">
+			   , l.member_id as bookmarkId
+			</when>
+			<otherwise>
+			   , null as bookmarkId
+			</otherwise>
+		</choose>
+		FROM recruit r 
+		left outer join (SELECT com_no, 
+						 		TRUNC(AVG(rate),1) as avg_rate,
+						 		TRUNC(AVG(salary_rate),1) as avg_salrate,
+						 		TRUNC(AVG(wlb_rate),1) as avg_wlbrate
+						 FROM com_reviews
+						 group by com_no) c
+		on r.com_no = c.com_no
+		<if test="memberId != null and !memberId.equals('')">
+			left outer join recruit_likes l
+			on r.recruit_no = l.recruit_no
+			and l.member_id=#{memberId}
+		</if>
+		where r.recruit_no = #{recruitNo}
+	</select>
+
+	<!-- 채용공고 등록 -->
+	<insert id="registRecruit" parameterType="RecruitVO">
+		<selectKey order="BEFORE" keyProperty="recruitNo" resultType="int">
+			select nvl(max(recruit_no), 0)+1 as recruitNo 
+			from recruit
+		</selectKey>
+		insert into recruit (RECRUIT_NO, 
+							COM_NO, 
+							TITLE, 
+							END_DATE, 
+							JOB_TYPE,
+							CAREER, 
+							EMP_TYPE, 
+							SALARY,
+							INTRODUCE, 
+							JOB_DETAIL, 
+							ADVANTAGE, 
+							ETC,
+							CONTACT , 
+							SKILL, 
+							<if test="img != null and !img.equals('')">
+							IMG, 
+							</if>
+							NAME)
+					VALUES(#{recruitNo}, 
+						   #{comNo}, 
+						   #{title},
+						   #{endDate}, 
+						   #{jobType}, 
+						   #{career}, 
+						   #{empType}, 
+						   #{salary},
+						   #{introduce}, 
+						   #{jobDetail}, 
+						   #{advantage}, 
+						   #{etc}, 
+						   #{contact},
+						   #{skill},
+						   <if test="img != null and !img.equals('')"> 
+						   #{img}, 
+						   </if>
+						   #{name})
+	</insert>
+
+	<!-- 채용공고 수정 -->
+	<update id="updateRecruit" parameterType="RecruitVO">
+		UPDATE recruit
+		SET	title = #{title}, 
+			end_date = #{endDate}, 
+			job_type = #{jobType},
+			career = #{career},
+			emp_type = #{empType},
+			salary = #{salary},
+			introduce = #{introduce}, 
+			job_detail = #{jobDetail},
+			advantage = #{advantage},
+			etc = #{etc}, 
+			contact = #{contact}, 
+			skill = #{skill}
+			<if test="img != null and !img.equals('')"> 
+			, img = #{img}
+			</if>
+		WHERE recruit_no = #{recruitNo}
+	</update>
+
+	<!-- 채용공고 삭제 -->
+	<delete id="deleteRecruit" parameterType="int">
+		delete from recruit
+		where recruit_no = #{recruitNo}
+	</delete>
+
+	<!-- 업계평균 평점구하기 -->
+	<select id="getAvg" parameterType="java.util.HashMap"
+		resultType="AvgRate">
+		select trunc(nvl(avg(r.rate), 0), 1) as avg_rate,
+		trunc(nvl(avg(r.salary_rate),0), 1) as avg_sal_rate,
+		trunc(nvl(avg(r.wlb_rate), 0),1) as avg_wlb_rate
+		from com_reviews r
+		join company c
+		on r.com_no = c.com_no
+		<if test="jobTypeList != null">
+			where
+			<foreach item="item" index="index" collection="jobTypeList"
+				open="(" separator=" or " close=")">
+				upper(job_type) like
+				'%'||upper(#{item})||'%'
+			</foreach>
+		</if>
+	</select>
+
+	<!-- 관심공고 등록 -->
+	<insert id="RecruitLike" parameterType="RecruitLikesVO">
+		<selectKey order="BEFORE" keyProperty="likeNo"
+			resultType="Integer">
+			select nvl(max(like_no), 0)+1 as like_no from
+			recruit_likes
+		</selectKey>
+		insert into recruit_likes values (#{likeNo}, #{recruitNo}, #{memberId})
+	</insert>
+
+	<!-- 관심공고 삭제 -->
+	<delete id="deleteRecruitLike" parameterType="RecruitLikesVO">
+		delete from recruit_likes
+		where recruit_no = #{recruitNo}
+			  and member_id = #{memberId}
+	</delete>
+
+	<!-- 관심공고 전체 조회 -->
+	<select id="getMyRecruitList" parameterType="String"
+		resultType="RecruitVO">
+		SELECT r.recruit_no, 
+				r.com_no, 
+				nvl(c.avg_rate,0) as avg_rate,
+				nvl(c.avg_salrate,0) as avg_salrate,
+				nvl(c.avg_wlbrate,0) as	avg_wlbrate,
+				r.title, 
+				r.end_date, 
+				r.job_type,
+				r.career, 
+				r.emp_type,
+				r.salary, 
+				r.introduce, 
+				r.job_detail,
+				r.advantage, 
+				r.etc, 
+				r.contact,
+				r.reg_date, 
+				r.skill, 
+				r.img, 
+				r.name
+		FROM recruit r 
+		left outer join	(SELECT com_no, 
+								TRUNC(AVG(rate),1) as avg_rate,
+								TRUNC(AVG(salary_rate),1) as avg_salrate,
+								TRUNC(AVG(wlb_rate),1) as avg_wlbrate
+						FROM com_reviews
+						group by com_no) c
+		on r.com_no = c.com_no
+		
+		join recruit_likes l
+		on r.recruit_no = l.recruit_no
+		
+		where l.member_id =	#{memberId}
+			  and (to_char(end_date, 'yyyymmdd') >= to_char(sysdate, 'yyyymmdd')
+			  or end_date is null)
+	</select>
+	
+	<!-- 지원하기 -->
+	<insert id="apply" parameterType="RecruitHistoryVO">
+		<selectKey order="BEFORE" keyProperty="historyNo"
+			resultType="int">
+			select
+			nvl(max(HISTORY_NO), 0)+1 as historyNo from recruit_history
+		</selectKey>
+			insert into 
+			recruit_history
+				  (history_no, 
+				  recruit_no, 
+				  member_id, 
+				  resume)
+			values(#{historyNo}, 
+				   #{recruitNo},
+				   #{memberId},
+				   #{resume})
+			
+	</insert>
+	
+	<!-- 지원이력 가져오기 -->
+	<select id="getApplyList" parameterType="String" resultType="RecruitHistoryVO">
+		SELECT H.*, 
+		       R.title, 
+		       R.NAME, 
+		       R.end_date
+		FROM recruit_history H
+		JOIN recruit R 
+		ON H.recruit_no = R.recruit_no
+		WHERE member_id = #{memberId}
+		order by history_no desc
+	</select>
+	 
+	<!-- 지원취소 -->
+	<update id="withdrawApply" parameterType="RecruitHistoryVO">
+		UPDATE recruit_history
+		SET status='취소'
+		WHERE history_no=#{historyNo}
+	</update>
+	
+	<!-- 지원자 목록 조회 -->
+	<select id="getApplyMember" parameterType="int" resultType="RecruitHistoryVO">
+		SELECT H.*, 
+			   R.NAME, 
+			   R.title,
+			   R.end_date 
+		FROM recruit_history H
+		JOIN recruit R
+		ON H.recruit_no = R.recruit_no
+		JOIN company C
+		ON R.com_no=C.com_no
+		WHERE C.com_no=#{comNo} AND status='지원'
+	</select>
+	
+	<!-- 이력서 읽음 -->
+	<update id="readResume" parameterType="int">
+		UPDATE recruit_history
+		SET isRead='확인'
+		WHERE history_no=#{historyNo}
+	</update>
+	
+	<!-- 지원이력조회 -->
+	<select id="checkApply" parameterType="RecruitHistoryVO" resultType="Integer">
+		SELECT COUNT(*) 
+		FROM recruit_history
+		WHERE recruit_no=#{recruitNo}
+		AND member_id=#{memberId} 
+		AND status='지원'
+	</select>
+</mapper>

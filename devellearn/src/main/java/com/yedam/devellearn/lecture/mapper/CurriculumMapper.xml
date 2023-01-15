@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.CurriculumMapper">
+	
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(curr_no), 0) + 1 as curr_no from curriculums
+	</select>
+	
+	<!-- 전체조회 - 강의번호로 조회 -->
+	<select id="selectAllByLectureNo" resultType="CurriculumVO" parameterType="Integer">
+		select * from curriculums where lecture_no = #{lectureNo} order by 1
+	</select>
+	
+	<!-- 단건조회 - 커리큘럼번호로 조회 -->
+	<select id="selectOneCurr" resultType="CurriculumVO" parameterType="Integer">
+		select * from curriculums where curr_no = #{currNo}
+	</select>
+	
+	<!-- 커리큘럼 등록 -->
+	<insert id="insert" parameterType="CurriculumVo">
+		insert into curriculums (
+								 curr_no,
+								 lecture_no,
+								 lecture_title,
+								 curr_name,
+								 video_src,
+								 play_time
+								)
+								values
+								(
+								 #{currNo},
+								 #{lectureNo},
+								 #{lectureTitle},
+								 #{currName},
+								 #{videoSrc},
+								 #{playTime}
+								)
+	</insert>
+	
+	<!-- 수정 작업 필요 -->
+	<update id="update" parameterType="CurriculumVo">
+		update curriculums set lecture_title = #{lectureTitle}
+							   ,curr_name = #{currName}
+							   <if test="videoSrc neq null">
+								   ,video_src = #{videoSrc}
+								   ,play_time = #{playTime}
+							   </if>
+		where curr_no = #{currNo}							   
+	</update>
+</mapper>

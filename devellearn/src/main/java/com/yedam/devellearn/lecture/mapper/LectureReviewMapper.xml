@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.lecture.mapper.LectureReviewMapper">
+	<!-- 고유번호 조회 -->
+	<select id="getNo" resultType="Integer">
+		select nvl(max(review_no), 0) + 1 as review_no from lecture_review
+	</select>
+	
+	<!-- 전체 조회 - 강의번호로 조회 -->
+	<select id="selectAllByLectureNo" resultType="LectureReviewVO" parameterType="Integer">
+		select * 
+		from lecture_review 
+		where lecture_no = #{lectureNo} 
+		order by 1 desc 
+	</select>
+	
+	<!-- 단건 조회 - 수강평번호로 조회 -->
+	<select id="selectOne" resultType="LectureReviewVO" parameterType="Integer">
+		select * from lecture_review where review_no = #{reviewNo}
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insert" parameterType="LectureReviewVO">
+		insert into lecture_review (
+									review_no,
+									member_id,
+									lecture_no,
+									content,
+									rate
+								   )
+							values (
+									#{reviewNo},
+									#{memberId},
+									#{lectureNo},
+									#{content},
+									#{rate}
+								   )
+	</insert> 
+	
+	<!-- 삭제 -->
+	<delete id="delete" parameterType="Integer">
+		delete from lecture_review where review_no = #{reviewNo} 
+	</delete>
+	
+	<!-- 수정 - content, rate 수정 -->
+	<update id="update" parameterType="LectureReviewVO">
+	update lecture_review 
+	set content = #{content},
+		rate = #{rate}
+	where review_no = #{reviewNo} 
+	</update>
+</mapper>

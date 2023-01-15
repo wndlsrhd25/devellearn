@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.blog.mapper.BlogPostMapper">
+
+
+	<!--블로그 게시글 번호 조회 -->
+	<select id="getBlogPostNo" resultType="BlogPostVO">
+		SELECT NVL(MAX(post_no),0)+1 as post_no FROM blog_post
+	</select>
+	
+	
+	<!--블로그 메인 전체조회 -->
+	<select id="getBlogList" resultType="BlogPostVO" parameterType="Map">
+		select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+			  ,(select count(*)
+	              from blog_comments
+	             where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where p.read_status='전체공개'
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' 
+           and p.blog_id in (select distinct blog_id 
+           					   from my_blog 
+           					  where member_id = #{memberId})
+           		)  
+            or ( p.read_status='비공개' 
+           and p.member_id =#{memberId} )  
+         </if>	  
+	  </select>
+
+
+
+	<!-- 블로그 게시글 검색어(제목,내용), 태그로 전체조회 -->
+	<select id="serchBlogList" resultType="BlogPostVO" parameterType="Map">
+		select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+			  ,(select count(*)
+	              from blog_comments
+	             where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where  
+  		 <if test="keyword !=null" >
+  		  (title LIKE '%'|| #{keyword} ||'%' OR content LIKE '%'|| #{keyword} ||'%') and
+  		 </if>
+  		 <if test="tags !=null">
+  		  (tags like '%'|| #{tags} ||'%') and
+  		 </if>
+  		 (p.read_status='전체공개'
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id 
+            											   from my_blog 
+            											  where member_id = #{memberId}) 
+            											  <if test="keyword != null">
+            											   and (title LIKE '%'|| #{keyword} ||'%' 
+            											    OR content LIKE '%'|| #{keyword} ||'%')
+            											  </if>
+            											  <if test="tags != null">
+            											   and tags like '%'|| #{tags} ||'%'
+            											  </if>
+               ) 
+            or ( p.read_status='비공개' and p.member_id =#{memberId} 
+						            <if test="keyword !=null">
+						              and (title LIKE '%'|| #{keyword} ||'%' 
+						               OR content LIKE '%'|| #{keyword} ||'%')
+						            </if>
+									<if test="tags != null">
+									  and tags like '%'|| #{tags} ||'%'
+									</if>
+            	)  
+         </if>
+	   		) order by post_no desc
+	</select>
+	
+	
+	<!-- 블로그 태그로 전체조회 -->
+	<!--  <select id="serchBlogTag" resultType="BlogPostVO" parameterType="Map">
+		select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+			  ,(select count(*)
+	              from blog_comments
+	             where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where (tags LIKE '%'|| #{tags} ||'%') and (p.read_status='전체공개'
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id 
+            											   from my_blog 
+            											  where member_id = #{memberId}) 
+            											    and (tags LIKE '%'|| #{tags} ||'%')) 
+            or ( p.read_status='비공개' and p.member_id =#{memberId} and (tags LIKE '%'|| #{tags} ||'%'))  
+         </if>
+		)
+	</select>-->
+	
+	
+
+
+	<!-- 블로그 게시글 단건 조회 -->
+	<select id="getBlogInfo" resultType="BlogPostVO">
+		 SELECT p.* 
+			  ,(select bookmark_no
+		             from bookmark_folder
+		            where member_id = #{memberId}
+		              and post_no = p.post_no) as book
+	          ,(select count(*) 
+			      from blog_likes 
+		         where post_no = p.post_no) as likes
+		     ,(select count(*)
+                 from blog_comments
+                where post_no = p.post_no) as comments
+		   from blog_post p 
+		  where p.post_no = #{postNo}
+	</select>
+
+
+	<!-- 블로그 게시글 전체 조회(내블로그,타블로그)  -->
+	<select id="getMyBlogList" resultType="BlogPostVO" >
+	
+	select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+		      ,(select count(*)
+                  from blog_comments
+                 where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where p.blog_id = #{blogId} and (p.read_status='전체공개' 
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id from my_blog where member_id = #{memberId})) 
+            or ( p.read_status='비공개' and p.member_id =#{memberId})  
+         </if>
+  	  ) order by post_no desc
+			   
+	</select>
+	
+	<!-- 블로그 프로필 조회 -->
+	<select id="selectProfile" resultType="String" parameterType="String">
+	 select distinct(m.profile)
+	   from blog_folder f, members m 
+	  where f.blog_id = m.member_id 
+	    and f.blog_id = #{blogId}
+	</select>
+	
+
+	
+	
+	<!-- 블로그 게시글 검색(내블로그,타블로그)  -->
+	<select resultType="BlogPostVO" id="getMyBlogSearch">
+			   select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+			  ,(select count(*)
+	              from blog_comments
+	             where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where p.blog_id = #{blogId} 
+  		 <if test="keyword !=null" >
+  		   and (title LIKE '%'|| #{keyword} ||'%' OR content LIKE '%'|| #{keyword} ||'%') 
+  		 </if>
+  		 <if test="tags !=null">
+  		   and tags like '%'|| #{tags} ||'%'
+  		 </if>
+  		   and (p.read_status='전체공개'
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id 
+            											   from my_blog 
+            											  where member_id = #{memberId}) 
+            											  <if test="keyword != null">
+            											    and (title LIKE '%'|| #{keyword} ||'%' 
+            											     OR content LIKE '%'|| #{keyword} ||'%')
+            											  </if>
+            											  <if test="tags != null">
+            											    and tags like '%'|| #{tags} ||'%'
+            											  </if>
+            											 ) 
+            or ( p.read_status='비공개' and p.member_id =#{memberId} 
+            <if test="keyword !=null">
+            and (title LIKE '%'|| #{keyword} ||'%' OR content LIKE '%'|| #{keyword} ||'%')
+            </if>
+			<if test="tags != null">
+			and tags like '%'|| #{tags} ||'%'
+			</if>
+			)  
+         </if>
+	   		) order by post_no desc	   
+	</select>
+	
+
+	<!-- 블로그 게시글 삭제 -->
+	<delete id="deleteBlogPost">
+		delete from blog_post
+		 where post_no = #{postNo}
+	</delete>
+	
+	
+	
+	<!-- 블로그 게시글 입력 -->
+	<insert id= "insertBlogPost" parameterType="BlogPostVO">
+		<selectKey keyProperty="postNo" order="BEFORE" resultType="int">
+			select NVL(MAX(post_no),0)+1 FROM blog_post
+		</selectKey>
+	  insert into blog_post (post_no
+							,blog_id
+							,member_id
+							,title
+							,content
+							<if test="thumbnail !=null">
+							,thumbnail
+							</if>
+							<if test="thumbnail ==null and !blogId.equals(memberId)">
+							,thumbnail
+							</if>
+							<if test="thumbnail ==null and blogId.equals(memberId)">
+							,thumbnail
+							</if>
+							,create_date
+							<if test="tags !=null">
+							,tags
+							</if>
+							,read_status
+							,comment_set
+							,folder_name) 
+					
+			         values (#{postNo}
+							,#{blogId}
+							,#{memberId}
+							,#{title}
+							,#{content}
+							<if test="thumbnail !=null">
+							,#{thumbnail}
+							</if>
+							<if test="thumbnail ==null and !blogId.equals(memberId)">
+							,'project_default.jpg'
+							</if>
+							<if test="thumbnail ==null and blogId.equals(memberId)">
+							,'blog_default.jpg'
+							</if>
+							,sysdate
+							<if test="tags !=null">
+							,#{tags}
+							</if>
+							,#{readStatus}
+							,#{commentSet}
+							,#{folderName})
+	</insert>
+	
+	
+	
+	<!-- 블로그 게시글 수정 -->
+	<update id="updateBlogPost" parameterType="BlogPostVO">
+	
+		UPDATE blog_post
+		<set>
+			<if test="title != null">
+				title = #{title}
+			</if>
+			<if test="content != null">
+			,content = #{content}
+			</if>
+			<if test='thumbnail != null and !thumbnail.equals("")'>
+			,thumbnail = #{thumbnail}
+			</if>
+			,create_date = sysdate
+			<if test="readStatus != null">
+			,read_status = #{readStatus}
+			</if>
+			<if test="commentSet != null">
+			,comment_set = #{commentSet}
+			</if>
+			,tags = #{tags}
+			<if test="folderName != null">
+			,folder_name = #{folderName}
+			</if>
+		
+		</set>
+		where post_no = #{postNo}
+		
+	</update>
+	
+	
+	<!-- 조회수 -->
+	<update id="updateHitsCnt" parameterType="int">
+		update blog_post
+		   set hits = hits+1
+		 where post_no = #{postNo}
+	</update>
+	
+	<!-- 본인 블로그 폴더명 조회 -->
+	<select id="getFolderList" resultType="BlogFolderVO" parameterType="String">
+		select folder_name,folder_no
+		  from blog_folder
+		 where blog_id = #{blogId}
+	</select>
+	
+	<!-- 폴더별 게시글 조회 -->
+	<select id="folderPostInfo" resultType="BlogPostVO" parameterType="BlogPostVO">
+	
+	select p.* 
+			  ,(select bookmark_no
+	              from bookmark_folder
+	             where member_id = #{memberId}
+	               and post_no = p.post_no) as book
+	          ,(select count(*) 
+				  from blog_likes 
+			     where post_no = p.post_no) as likes
+			  ,(select count(*)
+                 from blog_comments
+                where post_no = p.post_no) as comments
+  		  from blog_post p
+  		 where p.blog_id = #{blogId} and p.folder_name = #{folderName} and (p.read_status='전체공개' 
+         <if test="memberId != null">
+            or ( p.read_status='멤버공개' and p.blog_id in (select distinct blog_id from my_blog where member_id = #{memberId}))  
+            or ( p.read_status='비공개' and p.member_id =#{memberId})  
+         </if>
+  	  ) order by post_no desc
+	
+	</select>
+	
+	<!-- 블로그 폴더 이름 변경  -->
+	<update id="updateFolderName" parameterType="BlogFolderVO">
+	
+	UPDATE BLOG_FOLDER 
+	   SET FOLDER_NAME = #{newFolderName}
+	 WHERE blog_id=#{blogId}
+	   AND FOLDER_NAME=#{folderName}
+	
+	</update>
+	
+	<!-- 게시글 폴더명도 같이 변경되어야함 -->
+	<update id="updatePostFolder" parameterType="BlogFolderVO">
+	UPDATE BLOG_POST
+	   SET FOLDER_NAME = #{newFolderName}
+	 WHERE blog_id=#{blogId}
+	   AND FOLDER_NAME=#{folderName}
+	</update>
+	
+	
+	<!-- 블로그 폴더 추가 -->
+	<insert id="insertFolder" parameterType="BlogFolderVO">
+	
+	<selectKey keyProperty="folderNo" order="BEFORE" resultType="int">
+		select NVL(MAX(folder_no),0)+1 from blog_folder
+	</selectKey>
+	insert into blog_folder (
+								folder_no
+								,folder_name
+								,blog_id
+								)
+						 values (
+						 		#{folderNo}
+						 		,#{folderName}
+						 		,#{blogId}
+						 		)
+	</insert>
+	
+	<!-- 블로그 폴더 삭제 -->
+	<delete id="deleteFolder" >
+	delete from blog_folder 
+	 where folder_no = #{folderNo}
+	</delete>
+	
+	
+
+</mapper>

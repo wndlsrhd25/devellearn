@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+   namespace="com.yedam.devellearn.board.mapper.BoardMapper">
+
+   <!-- 단건조회 -->
+   <select id="getBoardDetail" resultType="BoardVO"
+      parameterType="int">
+      SELECT * FROM boards WHERE board_no = #{boardNo}
+   </select>
+   
+   <!-- 수정 -->
+   <insert id="updateBoard">
+      UPDATE boards 
+         SET title = #{title},
+         content = #{content},
+         reg_date = sysdate
+         WHERE board_no = #{boardNo}
+   </insert>
+   
+   <!-- 삭제 -->
+   <delete id="deleteBoard" parameterType="int">
+      delete from boards
+      where board_no = #{boardNo}
+   </delete>
+   
+   <!-- 댓글조회 -->
+   <select id="getRepListAll" resultType="BoardRepVO"
+      parameterType="int">
+      SELECT * FROM rep WHERE board_no = #{boardNo} ORDER BY reg_date desc
+   </select>
+   
+   <!-- 댓글단건 -->
+   <select id="getRepDetail" resultType="BoardRepVO"
+      parameterType="int">
+      SELECT * FROM rep WHERE rep_no = #{repNo}
+   </select>
+   
+   <!-- 댓글등록 -->
+   <insert id="insertRep" parameterType="BoardRepVO">
+      <selectKey order="BEFORE" keyProperty="repNo"
+         resultType="int">
+         select
+         nvl(max(rep_no), 0)+1 as repNo from rep
+      </selectKey>
+      INSERT INTO rep
+      (rep_no,  member_id, content, reg_date, board_no)
+      VALUES (#{repNo}, #{memberId}, #{content}, sysdate, #{boardNo})
+   </insert>
+   
+   <!-- 댓글삭제 -->
+   <delete id="deleteRep" parameterType="int">
+      delete from rep
+      where rep_no = #{repNo}
+   </delete>
+   
+   <!-- 댓글수정 -->
+   <insert id="updateRep">
+      UPDATE rep 
+         SET content = #{content}, reg_date = sysdate
+         WHERE rep_no = #{repNo}
+   </insert>
+   
+   <!-- 조회수 -->
+   <update id="boardCount" parameterType="int">
+   update boards set count=count+1 where board_no = #{boardNo}
+   </update>
+   
+   <!-- 전체조회/검색 -->
+   <select id="getBoardListAll" resultType="BoardVO" parameterType="Map">
+      SELECT * 
+      FROM boards 
+      WHERE board_type=#{boardType} 
+      <if test="searchinput != null and !searchinput.equals('')">
+         AND (upper(title) like '%'||upper(#{searchinput})||'%'
+         OR upper(content) like '%'||upper(#{searchinput})||'%')
+      </if>
+      ORDER BY board_no desc
+   </select>
+
+   
+   <!-- 내글 전체조회 -->
+   <select id="getMyBoardListAll" resultType="BoardVO" parameterType="Map">
+      SELECT * 
+        FROM boards 
+       WHERE member_id = #{memberId} 
+       ORDER BY board_no desc
+   </select>
+   <!-- 내댓글 전체조회 -->
+   <select id="getMyRepListAll" resultType="BoardRepVO" parameterType="Map">
+      SELECT B.rep_no,
+             B.member_id,
+             B.content,
+             B.reg_date,
+             B.board_no,
+             A.board_type
+      FROM boards A
+      JOIN rep B
+      ON A.board_no = B.board_no
+      WHERE B.member_id= #{memberId}
+      ORDER BY board_no desc
+   </select>
+
+   <!-- 내글 검색 -->
+   <select id="getMyBoardFilter" resultType="BoardVO" parameterType="java.util.HashMap">
+      select * from boards 
+      <where>
+         <if test="searchinput != null and !searchinput.equals('')">
+         (upper(title) like '%'||upper(#{searchinput})||'%'
+         OR upper(content) like '%'||upper(#{searchinput})||'%') AND
+         </if>
+          member_id = #{memberId}
+      </where>
+         ORDER BY board_no desc
+   </select>
+   
+   <!-- 내댓글 검색 -->
+   <select id="getMyRepFilter" resultType="BoardRepVO" parameterType="java.util.HashMap"
+   >
+      select * from rep
+      <where>
+         <if test="searchinput != null and !searchinput.equals('')">
+         (upper(title) like '%'||upper(#{searchinput})||'%') AND 
+         </if>
+         member_id = #{memberId}
+      </where>
+         ORDER BY reg_date desc
+   </select>
+   
+   <!-- 등록 -->
+   <insert id="insertBoard" parameterType="BoardVO">
+      <selectKey order="BEFORE" keyProperty="boardNo"
+         resultType="int">
+         select
+         nvl(max(board_no), 0)+1 as boardNo from boards
+      </selectKey>
+      INSERT INTO boards
+      (board_no, member_id, title, content, reg_date, count, board_type)
+      VALUES (#{boardNo}, #{memberId}, #{title}, #{content}, sysdate, 0, #{boardType})
+   </insert>
+
+   
+</mapper>

@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.devellearn.login.mapper.LoginMapper">
+
+	<!-- 회원가입 -->
+	<insert id="insertMember" parameterType="MemberVO">
+		INSERT INTO MEMBERS
+		(member_id
+		,password
+		,name
+		,email
+		,phone
+		,grade
+		,status
+		,my_resume
+		,profile
+		)
+		VALUES
+		(#{memberId}
+		,#{password}
+		,#{name}
+		,#{email}
+		,#{phone}
+		,'비기너'
+		,'join'
+		,DEFAULT
+		,'default_profile.jpg'
+		)
+	</insert>
+
+	<!-- loginCheck -->
+	<select id="loginCheck" resultType="MemberVO">
+		select * from members where
+		member_id = #{memberId}
+		and password=#{password}
+		and status = 'join'
+	</select>
+
+	<!-- id 중복체크 -->
+
+	<select id="idCheck" resultType="Integer" parameterType="Map">
+		SELECT
+		count(*) FROM
+		(SELECT member_id FROM members WHERE
+		member_id=#{memberId}
+		UNION
+		SELECT com_id FROM company_member WHERE
+		com_id =#{memberId})
+	</select>
+
+
+	<!-- 기업회원 로그인 -->
+	<select id="companyLogin" resultType="ComMemberVO">
+		select * from
+		company_member where com_id = #{comId}
+		and password=#{password}
+	</select>
+
+	<!-- 기업 회원가입 -->
+	<insert id="insertComMember" parameterType="ComMemberVO">
+		INSERT INTO
+		company_member
+		(com_id
+		,com_no
+		,password
+		,name
+		,ceo_name
+		,est_date
+		,manager
+		,phone
+		,email
+		,dept
+		,position
+		,addr
+		)
+		VALUES
+		(#{comId}
+		,#{comNo}
+		,#{password}
+		,#{name}
+		,#{ceoName}
+		,#{estDate}
+		,#{manager}
+		,#{phone}
+		,#{email}
+		,#{dept}
+		,#{position}
+		,#{addr}
+		)
+	</insert>
+
+
+	<!-- 기업회원 아이디 중복체크 -->
+
+	<select id="comIdCheck" resultType="Integer" parameterType="Map">
+		SELECT count(*) FROM
+		(SELECT member_id FROM members WHERE
+		member_id=#{comId}
+		UNION
+		SELECT com_id FROM company_member WHERE com_id
+		=#{comId})
+	</select>
+
+	<!-- 회원조회 (개인회원 단건조회) -->
+	<select id="selectMember" resultType="MemberVO"
+		parameterType="String">
+		select * from members where member_id=#{memberId}
+	</select>
+
+	<!-- 회원조회 (기업회원 단건조회) -->
+	<select id="selectComMember" resultType="ComMemberVO"
+		parameterType="String">
+		select * from company_member where com_id=#{comId}
+	</select>
+
+
+	<!-- 개인정보 수정(업데이트_이메일, 비밀번호, 전화번호, 프로필) -->
+
+	<update id="updateInfo" parameterType="MemberVO">
+		update members
+		set
+		email=#{email}
+		<if test='password!=null and !password.equals("")'>
+			, password = #{password}
+		</if>
+		, phone = #{phone}
+		<if test='profile != null and !profile.equals("")'>
+			, profile = #{profile}
+		</if>
+		where member_id=#{memberId}
+	</update>
+
+
+	<!-- 개인정보 수정(업데이트_이메일, 비밀번호, 전화번호, 프로필) -->
+
+	<update id="updateComInfo" parameterType="ComMemberVO">
+		update company_member
+		set
+		<if test='password!=null and !password.equals("")'>
+			password = #{password},
+		</if>
+		manager = #{manager}
+		, phone = #{phone}
+		, dept = #{dept}
+		, position =
+		#{position}
+		, email= #{email}
+		where com_id= #{comId}
+	</update>
+
+
+	<!-- 이메일로 정보를 확인해서 메일을 보내야겠네... -->
+	<!-- 개인회원 이메일 조회 (개인회원 단건조회) -->
+	<select id="emailCheck" resultType="Integer"
+		parameterType="String">
+		select count(*) from (
+		select email from members
+		where
+		email=#{email}
+		union
+		select email from company_member
+		where
+		email=#{email})
+	</select>
+
+
+
+	<!-- 개인회원 비밀번호 변경 -->
+
+	<update id="changePw" parameterType="MemberVO">
+		update members
+		set
+		password =
+		#{password} where email= #{email}
+	</update>
+
+	<!-- 기업회원 비밀번호 변경 -->
+
+	<update id="changeComPw" parameterType="ComMemberVO">
+		update company_member
+		set
+		password = #{password} where email= #{email}
+	</update>
+
+
+
+	<!-- 탈퇴 -->
+
+	<update id="withdrawal" parameterType="String">
+		update members
+		set
+		status='withdrawal'
+		where member_id=#{memberId}
+	</update>
+
+
+	<!-- 블로그 폴더 삽입 nhj -->
+	<insert id="insertFolder" parameterType="MyBlogVO">
+		<selectKey keyProperty="folderNo" order="BEFORE"
+			resultType="int">
+			select NVL(MAX(folder_no),0)+1 FROM blog_folder
+		</selectKey>
+
+		insert into blog_folder (
+		folder_no,
+		folder_name,
+		blog_id
+		)
+		values
+		(
+		#{folderNo},
+		'게시글',
+		#{memberId}
+		)
+	</insert>
+
+	<!-- my blog 삽입 nhj-->
+	<insert id="insertMyblog" parameterType="MyBlogVO">
+		<selectKey keyProperty="myblogNo" order="BEFORE"
+			resultType="int">
+			select NVL(MAX(myblog_no),0)+1 FROM my_blog
+		</selectKey>
+
+		insert into my_blog (
+		myblog_no,
+		member_id,
+		blog_id
+		)
+		values
+		(
+		#{myblogNo},
+		#{memberId},
+		#{memberId}
+		)
+	</insert>
+
+	<!-- 북마크 폴더 삽입 nhj-->
+	<insert id="insertBookFolder" parameterType="MyBlogVO">
+
+		<selectKey keyProperty="bookmarkNo" order="BEFORE"
+			resultType="int">
+			select NVL(MAX(bookmark_no),0)+1 from bookmark_folder
+		</selectKey>
+		insert into bookmark_folder (
+		bookmark_no
+		,book_folder_name
+		,member_id
+
+		)
+		values (
+		#{bookmarkNo}
+		,'북마크'
+		,#{memberId}
+		)
+	</insert>
+
+
+	<!-- 아이디 찾기 (이름, 전화번호로 아이디찾기) -->
+	<select id="findId" resultType="MemberVO" parameterType="Map">
+		select 
+		member_id FROM members
+		where name = #{name} and phone=#{phone}
+	</select>
+
+	<!-- 기업회원 아이디 찾기 (이름, 전화번호로 아이디찾기) -->
+	<select id="findComId" resultType="ComMemberVO"
+		parameterType="Map">
+		select com_id FROM company_member
+		where name = #{name} and phone=#{phone}
+	</select>
+
+
+	<!-- 탈퇴 회원 id 중복체크 -->
+
+	<select id="withdrawIdCheck" resultType="Integer" parameterType="Map">
+		SELECT
+		count(*) FROM members
+		where member_id=#{memberId} and status='withdrawal'
+	</select>
+	
+
+</mapper>

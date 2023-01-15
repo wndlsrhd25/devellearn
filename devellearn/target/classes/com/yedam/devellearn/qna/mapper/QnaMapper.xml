@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+   namespace="com.yedam.devellearn.qna.mapper.QnaMapper">
+
+   <!-- 전체조회 -->
+   <select id="getQnaListAll" resultType="QnaVO" parameterType="Map">
+      SELECT * FROM qnas ORDER BY qna_no desc
+   </select>
+   <!-- 내글 전체조회 -->
+   <select id="getMyQnaListAll" resultType="QnaVO" parameterType="Map">
+      SELECT * FROM qnas WHERE member_id = #{memberId} ORDER BY qna_no desc
+   </select>
+   <!-- 내댓글 전체조회 -->
+   <select id="getMyQnaRep" resultType="QnaRepVO" parameterType="Map">
+      SELECT * FROM qnareps WHERE member_id = #{memberId} ORDER BY qna_no desc
+   </select>
+
+   <!-- 검색 -->
+   <select id="getQnaFilter" resultType="QnaVO" parameterType="java.util.HashMap"
+   >
+      select * from qnas 
+      <where>
+
+         <if test="open =='전체'">
+         open='답변중' or open='해결완료'
+         </if>
+         <if test="open =='해결완료'">
+         open = '해결완료'
+         </if>
+         <if test="open =='답변중'">
+         open = '답변중'
+         </if>
+         <if test="category != null and !category.equals('')">
+         and category = #{category}
+         </if>
+         
+         <if test="searchinput != null and !searchinput.equals('')">
+         (upper(title) like '%'||upper(#{searchinput})||'%'
+         OR upper(content) like '%'||upper(#{searchinput})||'%')
+         </if>
+      </where>
+      ORDER BY qna_no desc
+   </select>
+   <!-- 내글 검색 -->
+   <select id="getMyQnaFilter" resultType="QnaVO" parameterType="java.util.HashMap"
+   >
+      select * from qnas 
+      <where>
+
+         <if test="open == null and open.equals('')">
+          member_id = #{memberId} open='답변중' or open='해결완료'
+         </if>
+         <if test="open =='해결완료'">
+         open = '해결완료' AND member_id = #{memberId}
+         </if>
+         <if test="open =='답변중'">
+         open = '답변중' AND member_id = #{memberId}
+         </if>
+         <if test="searchinput != null and !searchinput.equals('')">
+         (upper(title) like '%'||upper(#{searchinput})||'%') AND member_id = #{memberId}
+         </if>
+      </where>
+      ORDER BY qna_no desc
+   </select>
+
+   <!-- 단건조회 -->
+   <select id="getQnaDetail" resultType="QnaVO"
+      parameterType="int">
+      SELECT * FROM qnas WHERE qna_no = #{qnaNo}
+   </select>
+   
+   <!-- 등록 -->
+   <insert id="insertQna" parameterType="QnaVO">
+      <selectKey order="BEFORE" keyProperty="qnaNo"
+         resultType="int">
+         select
+         nvl(max(qna_no), 0)+1 as qnaNo from qnas
+      </selectKey>
+      INSERT INTO qnas
+      (qna_no, member_id, title, content, category, reg_date, open, count)
+      VALUES (#{qnaNo}, #{memberId}, #{title}, #{content}, #{category}, sysdate, '답변중', 0)
+   </insert>
+   
+   <!-- 수정 -->
+   <insert id="updateQna">
+      UPDATE qnas 
+         SET title = #{title},
+         content = #{content},
+         reg_date = sysdate
+         WHERE qna_no = #{qnaNo}
+   </insert>
+   <!-- 채택수정 -->
+   <insert id="updateChoice">
+      UPDATE qnareps 
+         SET choice = '채택'
+         WHERE qnarep_no = #{qnarepNo}
+   </insert>
+   <!-- 모집상태수정 -->
+   <insert id="updateOpen">
+      UPDATE qnas 
+         SET 
+            open = '해결완료'
+         WHERE qna_no = #{qnaNo}
+   </insert>
+   
+   <!-- 삭제 -->
+   <delete id="deleteQna" parameterType="int">
+      delete from qnas
+      where qna_no = #{qnaNo}
+   </delete>
+   
+   <!-- 댓글조회 -->
+   <select id="getRepListAll" resultType="QnaRepVO"
+      parameterType="int">
+      SELECT * FROM qnareps WHERE qna_no = #{qnaNo} ORDER BY reg_date desc
+   </select>
+   
+   <!-- 댓글단건 -->
+   <select id="getRepDetail" resultType="QnaRepVO"
+      parameterType="int">
+      SELECT * FROM qnareps WHERE qnarep_no = #{qnarepNo}
+   </select>
+   
+   <!-- 댓글등록 -->
+   <insert id="insertRep" parameterType="QnaRepVO">
+      <selectKey order="BEFORE" keyProperty="qnarepNo"
+         resultType="int">
+         select
+         nvl(max(qnarep_no), 0)+1 as qnarepNo from qnareps
+      </selectKey>
+      INSERT INTO qnareps
+      (qnarep_no,  member_id, content, reg_date, qna_no, choice)
+      VALUES (#{qnarepNo}, #{memberId}, #{content}, sysdate, #{qnaNo}, '미채택')
+   </insert>
+   
+   <!-- 댓글삭제 -->
+   <delete id="deleteRep" parameterType="int">
+      delete from qnareps
+      where qnarep_no = #{qnarepNo}
+   </delete>
+   
+   <!-- 댓글수정 -->
+   <insert id="updateRep">
+      UPDATE qnareps 
+         SET content = #{content}, reg_date = sysdate
+         WHERE qnarep_no = #{qnarepNo}
+   </insert>
+   
+   <!-- 조회수 -->
+   <update id="qnaCount" parameterType="int">
+   update qnas set count=count+1 where qna_no = #{qnaNo}
+   </update>
+</mapper>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.devellearn.study.mapper.StudyMapper">
+
+	<!-- 전체조회 -->
+	<select id="getStudyListAll" resultType="StudyVO" parameterType="Map">
+		SELECT * FROM studys ORDER BY study_no desc
+	</select>
+	<!-- 내글 전체조회 -->
+	<select id="getMyStudyListAll" resultType="StudyVO" parameterType="Map">
+		SELECT * FROM studys WHERE member_id = #{memberId} ORDER BY study_no desc
+	</select>
+	
+		<!-- 검색 -->
+	<select id="getStudyFilter" resultType="StudyVO" parameterType="java.util.HashMap"
+	>
+		select * from studys 
+		<where>
+
+			<if test="open =='전체'">
+			 open='모집중' or open='모집완료'
+			</if>
+			<if test="open =='모집완료'">
+			open = '모집완료'
+			</if>
+			<if test="open =='모집중'">
+			open = '모집중'
+			</if>
+			<if test="category != null and !category.equals('')">
+			and category = #{category}
+			</if>
+			
+			<if test="searchinput != null and !searchinput.equals('')">
+			AND (upper(title) like '%'||upper(#{searchinput})||'%'
+			OR upper(content) like '%'||upper(#{searchinput})||'%')
+			</if>
+		</where>
+		ORDER BY study_no desc
+	</select>
+		<!-- 내글 검색 -->
+	<select id="getMyStudyFilter" resultType="StudyVO" parameterType="java.util.HashMap"
+	>
+		select * from studys 
+		<where>
+
+			<if test="open =='전체'">
+			 member_id = #{memberId} AND (open='모집중' or open='모집완료')
+			</if>
+			<if test="open =='모집완료'">
+			open = '모집완료' AND member_id = #{memberId}
+			</if>
+			<if test="open =='모집중'">
+			open = '모집중' AND member_id = #{memberId}
+			</if>		
+			<if test="searchinput != null and !searchinput.equals('')">
+			AND (upper(title) like '%'||upper(#{searchinput})||'%') AND member_id = #{memberId}
+			</if>
+		</where>
+		ORDER BY study_no desc
+	</select>
+
+
+	<!-- 단건조회 -->
+	<select id="getStudyDetail" resultType="StudyVO"
+		parameterType="int">
+		SELECT * FROM studys WHERE study_no = #{studyNo}
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insertStudy" parameterType="StudyVO">
+		<selectKey order="BEFORE" keyProperty="studyNo"
+			resultType="int">
+			select
+			nvl(max(study_no), 0)+1 as studyNo from studys
+		</selectKey>
+		INSERT INTO studys
+		(study_no, member_id, title, content, category, reg_date, open, count, img)
+		VALUES (#{studyNo}, #{memberId}, #{title}, #{content}, #{category}, sysdate, '모집중', 0, #{img})
+	</insert>
+	
+	<!-- 수정 -->
+	<insert id="updateStudy">
+		UPDATE studys 
+			SET member_id = #{memberId},
+				title = #{title},
+				content = #{content},
+				category = #{category},
+				open = #{open},
+				reg_date = sysdate,
+				count = 0,
+				img = #{img}
+			WHERE study_no = #{studyNo}
+	</insert>
+	<!-- 모집상태수정 -->
+	<insert id="updateOpen">
+		UPDATE studys 
+			SET 
+				open = '모집완료'
+			WHERE study_no = #{studyNo}
+	</insert>
+	
+	<!-- 삭제 -->
+	<delete id="deleteStudy" parameterType="int">
+		delete from studys
+		where study_no = #{studyNo}
+	</delete>
+	
+	<!-- 댓글조회 -->
+	<select id="getRepListAll" resultType="StudyRepVO"
+		parameterType="int">
+		SELECT * FROM studyreps WHERE study_no = #{studyNo} ORDER BY reg_date desc
+	</select>
+	
+	<!-- 댓글단건 -->
+	<select id="getRepDetail" resultType="StudyRepVO"
+		parameterType="int">
+		SELECT * FROM studyreps WHERE studyrep_no = #{studyrepNo}
+	</select>
+	
+	<!-- 댓글등록 -->
+	<insert id="insertRep" parameterType="StudyRepVO">
+		<selectKey order="BEFORE" keyProperty="studyrepNo"
+			resultType="int">
+			select
+			nvl(max(studyrep_no), 0)+1 as studyrepNo from studyreps
+		</selectKey>
+		INSERT INTO studyreps
+		(studyrep_no,  member_id, content, reg_date, study_no)
+		VALUES (#{studyrepNo}, #{memberId}, #{content}, sysdate, #{studyNo})
+	</insert>
+	
+	<!-- 댓글삭제 -->
+	<delete id="deleteRep" parameterType="int">
+		delete from studyreps
+		where studyrep_no = #{studyrepNo}
+	</delete>
+	
+	<!-- 댓글수정 -->
+	<insert id="updateRep">
+		UPDATE studyreps 
+			SET content = #{content}, reg_date = sysdate
+			WHERE studyrep_no = #{studyrepNo}
+	</insert>
+	
+	<!-- 조회수 -->
+	<update id="studyCount" parameterType="int">
+	update studys set count=count+1 where study_no = #{studyNo}
+	</update>
+</mapper>
